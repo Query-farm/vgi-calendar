@@ -20,7 +20,8 @@ Usage:
     INSTALL vgi FROM community; LOAD vgi;
     ATTACH 'cal' (TYPE vgi, LOCATION 'uv run calendar_worker.py');
 
-    SELECT is_holiday FROM cal.is_holiday(DATE '2026-12-25', country := 'US');
+    SELECT cal.is_holiday(DATE '2026-12-25');            -- per-row scalar (defaults to 'US')
+    SELECT cal.is_holiday(DATE '2026-03-31', 'US', 'CA');
     SELECT * FROM cal.holidays(2026, country := 'US', subdiv := 'CA');
     SELECT cal.iso_year_week(DATE '2026-06-22');
     SELECT * FROM cal.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4');

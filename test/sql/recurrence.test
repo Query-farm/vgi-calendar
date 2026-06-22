@@ -1,0 +1,93 @@
+# name: test/sql/recurrence.test
+# description: RFC-5545 recurrence expansion via the rrule() table function, plus easter/iso scalars
+# group: [vgi_calendar]
+
+require-env VGI_CALENDAR_WORKER
+
+statement ok
+LOAD vgi;
+
+statement ok
+ATTACH 'cal' AS cal (TYPE vgi, LOCATION '${VGI_CALENDAR_WORKER}');
+
+# ---------------------------------------------------------------------------
+# rrule() — COUNT bound
+# ---------------------------------------------------------------------------
+
+query II
+SELECT seq, occurrence FROM cal.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4') ORDER BY seq;
+----
+0	2026-01-01 00:00:00
+1	2026-01-08 00:00:00
+2	2026-01-15 00:00:00
+3	2026-01-22 00:00:00
+
+# A full "RRULE:" prefix is accepted.
+query I
+SELECT count(*) FROM cal.rrule(TIMESTAMP '2026-01-01', 'RRULE:FREQ=DAILY;COUNT=3');
+----
+3
+
+# ---------------------------------------------------------------------------
+# rrule() — UNTIL bound (named argument)
+# ---------------------------------------------------------------------------
+
+# First of every month in 2026 -> 12 occurrences.
+query I
+SELECT count(*) FROM cal.rrule(
+  TIMESTAMP '2026-01-01', 'FREQ=MONTHLY;BYMONTHDAY=1', until := TIMESTAMP '2026-12-31');
+----
+12
+
+# count := named argument also bounds the expansion.
+query I
+SELECT count(*) FROM cal.rrule(TIMESTAMP '2026-01-01', 'FREQ=DAILY', count := 3);
+----
+3
+
+# A malformed rule raises.
+statement error
+SELECT * FROM cal.rrule(TIMESTAMP '2026-01-01', 'FREQ=BOGUS;COUNT=2');
+----
+
+# ---------------------------------------------------------------------------
+# easter / iso_week / iso_year_week scalars
+# ---------------------------------------------------------------------------
+
+query I
+SELECT cal.easter(2026);
+----
+2026-04-05
+
+# Easter in a leap year.
+query I
+SELECT cal.easter(2024);
+----
+2024-03-31
+
+query I
+SELECT cal.iso_week(DATE '2026-06-22');
+----
+26
+
+query I
+SELECT cal.iso_year_week(DATE '2026-06-22');
+----
+2026-W26
+
+# ISO year-week crossing the calendar-year boundary: 2021-01-01 is in ISO-2020.
+query I
+SELECT cal.iso_year_week(DATE '2021-01-01');
+----
+2020-W53
+
+# Per-row scalars over a VALUES table.
+query II
+SELECT y, cal.easter(y)
+FROM (VALUES (2026), (2027)) AS t(y) ORDER BY y;
+----
+2026	2026-04-05
+2027	2027-03-28
+
+statement ok
+DETACH cal;

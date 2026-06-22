@@ -1,0 +1,112 @@
+# name: test/sql/holidays.test
+# description: Holiday lookups across countries/subdivisions, observed shifts, and the holidays() table function
+# group: [vgi_calendar]
+
+require-env VGI_CALENDAR_WORKER
+
+statement ok
+LOAD vgi;
+
+statement ok
+ATTACH 'cal' AS cal (TYPE vgi, LOCATION '${VGI_CALENDAR_WORKER}');
+
+# ---------------------------------------------------------------------------
+# is_holiday / holiday_name scalars (per-row), default country = US
+# ---------------------------------------------------------------------------
+
+query I
+SELECT cal.is_holiday(DATE '2026-12-25');
+----
+true
+
+# A plain weekday is not a holiday.
+query I
+SELECT cal.is_holiday(DATE '2026-06-23');
+----
+false
+
+query I
+SELECT cal.holiday_name(DATE '2026-12-25');
+----
+Christmas Day
+
+# NULL holiday name when the date is not a holiday.
+query I
+SELECT cal.holiday_name(DATE '2026-06-23') IS NULL;
+----
+true
+
+# ---------------------------------------------------------------------------
+# Explicit country and country+subdivision overloads
+# ---------------------------------------------------------------------------
+
+query I
+SELECT cal.is_holiday(DATE '2026-12-25', 'GB');
+----
+true
+
+# Cesar Chavez Day (Mar 31) is a California holiday, not a US-federal one.
+query I
+SELECT cal.is_holiday(DATE '2026-03-31', 'US');
+----
+false
+
+query I
+SELECT cal.is_holiday(DATE '2026-03-31', 'US', 'CA');
+----
+true
+
+# An unknown country raises rather than silently returning false.
+statement error
+SELECT cal.is_holiday(DATE '2026-01-01', 'ZZ');
+----
+
+# ---------------------------------------------------------------------------
+# Per-row use over a small VALUES table
+# ---------------------------------------------------------------------------
+
+query II rowsort
+SELECT d, cal.is_holiday(d)
+FROM (VALUES (DATE '2026-12-25'), (DATE '2026-06-23'), (DATE '2026-07-04')) AS t(d);
+----
+2026-06-23	false
+2026-07-04	true
+2026-12-25	true
+
+# ---------------------------------------------------------------------------
+# holidays() set-returning table function
+# ---------------------------------------------------------------------------
+
+query I
+SELECT count(*) > 0 FROM cal.holidays(2026, country := 'US');
+----
+true
+
+# Christmas is present in the US 2026 holiday set.
+query I
+SELECT count(*) FROM cal.holidays(2026, country := 'US') WHERE name = 'Christmas Day';
+----
+1
+
+# Every row falls within the requested year.
+query I
+SELECT count(*) FROM cal.holidays(2026, country := 'US') WHERE year(date) <> 2026;
+----
+0
+
+# Adding a subdivision only ever adds holidays.
+query I
+SELECT (SELECT count(*) FROM cal.holidays(2026, country := 'US', subdiv := 'CA'))
+     >= (SELECT count(*) FROM cal.holidays(2026, country := 'US'));
+----
+true
+
+# Observed-shift detection: 2027 has at least one observed holiday
+# (Christmas 2027-12-25 is a Saturday, observed on Friday 2027-12-24).
+query I
+SELECT count(*) > 0 FROM cal.holidays(2027, country := 'US') WHERE observed;
+----
+true
+
+statement ok
+DETACH cal;

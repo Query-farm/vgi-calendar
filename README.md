@@ -12,52 +12,61 @@ Easter from [`python-dateutil`](https://pypi.org/project/python-dateutil/).
 INSTALL vgi FROM community; LOAD vgi;
 ATTACH 'cal' (TYPE vgi, LOCATION 'uv run calendar_worker.py');
 
-SELECT cal.easter(2026);                                              -- DATE 2026-04-05
-SELECT cal.iso_year_week(DATE '2026-06-22');                          -- '2026-W26'
-SELECT is_holiday FROM cal.is_holiday(DATE '2026-12-25', country := 'US');   -- true
+SELECT cal.easter(2026);                                  -- DATE 2026-04-05
+SELECT cal.iso_year_week(DATE '2026-06-22');              -- '2026-W26'
+SELECT cal.is_holiday(DATE '2026-12-25');                 -- true (country defaults to 'US')
+SELECT cal.is_holiday(DATE '2026-03-31', 'US', 'CA');     -- true (California)
 SELECT * FROM cal.holidays(2026, country := 'US', subdiv := 'CA');
 SELECT * FROM cal.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4');
 ```
 
-## Scalars vs. table functions (why some answers are tables)
+## Scalars (per-row) vs. table functions (set-returning)
 
-VGI **scalar** functions bind their constant arguments by *position* only — they
-do not accept DuckDB `name := value` arguments. So any calendar function that
-wants an optional, named `country` / `subdiv` is exposed as a **table function**
-that takes its date(s) positionally and returns a single-row answer:
+The split follows what the VGI SDK allows for each function shape:
 
-```sql
--- named country/subdiv -> table function, one row out
-SELECT is_holiday FROM cal.is_holiday(DATE '2026-12-25', country := 'US');
-SELECT holiday_name FROM cal.holiday_name(DATE '2026-07-04', country := 'US');
-SELECT date FROM cal.add_business_days(DATE '2026-12-24', 2, country := 'US');
-```
+* **Scalars** take **positional** arguments only and resolve overloads by
+  *arity* (DuckDB's `name := value` syntax is a table-function/macro feature, not
+  a scalar one). Every per-row answer — `is_holiday`, `holiday_name`,
+  `is_business_day`, `add_business_days`, `business_days_between`, plus `easter`,
+  `iso_week`, `iso_year_week` — is a **scalar**, so it works inline in any
+  projection or predicate. Optional `country` / `subdiv` are extra positional
+  arity overloads:
 
-The three functions whose entire signature is positional are true **scalars**
-(usable inline in any expression):
+  ```sql
+  SELECT is_holiday(order_date)                  FROM orders;  -- defaults to 'US'
+  SELECT is_holiday(order_date, 'GB')            FROM orders;  -- explicit country
+  SELECT is_holiday(order_date, 'US', 'CA')      FROM orders;  -- country + subdivision
+  SELECT order_date, add_business_days(order_date, 2) AS due   FROM orders;
+  ```
 
-```sql
-SELECT cal.easter(year), cal.iso_week(d), cal.iso_year_week(d) FROM events;
-```
+* **Table functions** return *many* rows and therefore accept named `country :=`
+  / `subdiv :=` / `count :=` / `until :=` arguments: `holidays`,
+  `business_days`, `rrule`.
 
-This is the same convention the companion [vgi-crontimes](https://github.com/Query-farm/vgi-crontimes)
-worker uses for its named `"end" :=` argument.
+  ```sql
+  SELECT * FROM cal.holidays(2026, country := 'US', subdiv := 'CA') ORDER BY date;
+  SELECT * FROM cal.business_days(DATE '2026-12-21', DATE '2026-12-31', country := 'US');
+  SELECT * FROM cal.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4');
+  ```
 
 ## Function catalog
 
 | Function | Form | Signature | Returns |
 | --- | --- | --- | --- |
-| `is_holiday` | table | `(date DATE, country := 'US', subdiv := NULL)` | `is_holiday BOOLEAN` |
-| `holiday_name` | table | `(date DATE, country := 'US', subdiv := NULL)` | `holiday_name VARCHAR` (NULL if none) |
-| `is_business_day` | table | `(date DATE, country := 'US', subdiv := NULL)` | `is_business_day BOOLEAN` |
-| `add_business_days` | table | `(date DATE, n INT, country := 'US', subdiv := NULL)` | `date DATE` |
-| `business_days_between` | table | `(start DATE, end DATE, country := 'US', subdiv := NULL)` | `business_days INT` |
-| `holidays` | table | `(year INT, country := 'US', subdiv := NULL)` | `(date DATE, name VARCHAR, observed BOOLEAN)` |
-| `business_days` | table | `(start DATE, end DATE, country := 'US', subdiv := NULL)` | `(date DATE)` |
-| `rrule` | table | `(dtstart TIMESTAMP, rule VARCHAR, count := NULL, until := NULL)` | `(seq BIGINT, occurrence TIMESTAMP)` |
+| `is_holiday` | scalar | `(date DATE[, country[, subdiv]])` | `BOOLEAN` |
+| `holiday_name` | scalar | `(date DATE[, country[, subdiv]])` | `VARCHAR` (NULL if none) |
+| `is_business_day` | scalar | `(date DATE[, country[, subdiv]])` | `BOOLEAN` |
+| `add_business_days` | scalar | `(date DATE, n INT[, country])` | `DATE` |
+| `business_days_between` | scalar | `(start DATE, end DATE[, country])` | `INT` |
 | `easter` | scalar | `(year INT)` | `DATE` |
 | `iso_week` | scalar | `(date DATE)` | `INT` |
 | `iso_year_week` | scalar | `(date DATE)` | `VARCHAR` (e.g. `'2026-W26'`) |
+| `holidays` | table | `(year INT, country := 'US', subdiv := NULL)` | `(date DATE, name VARCHAR, observed BOOLEAN)` |
+| `business_days` | table | `(start DATE, end DATE, country := 'US', subdiv := NULL)` | `(date DATE)` |
+| `rrule` | table | `(dtstart TIMESTAMP, rule VARCHAR, count := NULL, until := NULL)` | `(seq BIGINT, occurrence TIMESTAMP)` |
+
+The `country` default is `'US'`; for `is_holiday` / `holiday_name` /
+`is_business_day` a `subdiv` overload selects a state/province calendar.
 
 ### Holidays & business days
 
@@ -73,9 +82,8 @@ SELECT * FROM cal.holidays(2026, country := 'US', subdiv := 'CA') ORDER BY date;
 -- business days in a window, one per row
 SELECT * FROM cal.business_days(DATE '2026-12-21', DATE '2026-12-31', country := 'US');
 
--- "2 business days after an invoice date" join
-SELECT i.id, ab.date AS due
-FROM invoices i, cal.add_business_days(i.invoiced_on, 2, country := 'US') ab;
+-- "2 business days after an invoice date" — a per-row scalar
+SELECT id, add_business_days(invoiced_on, 2, 'US') AS due FROM invoices;
 ```
 
 `business_days_between(start, end)` counts the half-open range `[start, end)`
@@ -121,28 +129,37 @@ support matrix.
 
 ```sh
 uv sync --all-extras     # create .venv with vgi-python + holidays + dateutil + dev tools
-uv run pytest -q         # unit + in-process + end-to-end client tests
+make test                # pytest (unit + integration) + SQL end-to-end
+make test-unit           # pytest only
+make test-sql            # DuckDB sqllogictest files via haybarn-unittest
 uv run ruff check .      # lint
 uv run mypy vgi_calendar/
 ```
 
-`tests/test_core.py` covers the pure date math; `tests/test_tables.py` drives the
-table functions through the real bind→init→process lifecycle in-process; and
-`tests/test_client.py` spawns `calendar_worker.py` over the VGI client/RPC stack
-exactly as DuckDB would after `ATTACH`.
+`tests/test_core.py` covers the pure date math (including error / edge cases);
+`tests/test_tables.py` drives the set-returning table functions through the real
+bind→init→process lifecycle in-process; `tests/test_scalars.py` and
+`tests/test_client.py` spawn `calendar_worker.py` over the VGI client/RPC stack
+exactly as DuckDB would after `ATTACH`. The `test/sql/*.test` files are DuckDB
+sqllogictest cases run by [`haybarn-unittest`](https://pypi.org/project/haybarn-unittest/)
+(`uv tool install haybarn-unittest`) against a real `ATTACH` + `SELECT`.
 
 ## Layout
 
 ```
 calendar_worker.py       entry point; assembles the `cal` catalog (inline uv script metadata)
+Makefile                 test / test-unit / test-sql targets
 vgi_calendar/
   core.py                pure datetime math over holidays + dateutil (no Arrow/VGI)
-  scalars.py             positional-only scalars: easter, iso_week, iso_year_week
-  tables.py              named-arg table functions: holidays, business days, rrule, ...
+  scalars.py             per-row scalars (arity overloads): is_holiday, business days, easter, iso, ...
+  tables.py              named-arg table functions: holidays, business_days, rrule
   schema_utils.py        Arrow field/comment helpers
 tests/
   harness.py             in-process bind→init→process driver
-  test_core.py           pure-math unit tests
+  test_core.py           pure-math unit + error/edge tests
   test_tables.py         table-function integration tests
-  test_client.py         end-to-end tests via vgi.client.Client
+  test_scalars.py        per-row scalar overloads via vgi.client.Client
+  test_client.py         end-to-end scalar + table tests via vgi.client.Client
+test/sql/
+  *.test                 DuckDB sqllogictest end-to-end cases (haybarn-unittest)
 ```

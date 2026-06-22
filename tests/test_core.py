@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import datetime as dt
 
+import pytest
+
 from vgi_calendar import core
 
 
@@ -137,3 +139,66 @@ class TestRrule:
     def test_unbounded_rule_respects_hard_cap(self) -> None:
         occ = core.expand_rrule(dt.datetime(2026, 1, 1), "FREQ=DAILY", hard_cap=10)
         assert len(occ) == 10
+
+    def test_malformed_freq_raises(self) -> None:
+        with pytest.raises(ValueError):
+            core.expand_rrule(dt.datetime(2026, 1, 1), "FREQ=BOGUS;COUNT=2")
+
+    def test_garbage_rule_string_raises(self) -> None:
+        with pytest.raises(ValueError):
+            core.expand_rrule(dt.datetime(2026, 1, 1), "this is not a rule")
+
+    def test_count_one_returns_single(self) -> None:
+        assert core.expand_rrule(dt.datetime(2026, 1, 1), "FREQ=DAILY", count=1) == [dt.datetime(2026, 1, 1)]
+
+    def test_until_before_dtstart_is_empty(self) -> None:
+        occ = core.expand_rrule(
+            dt.datetime(2026, 6, 1),
+            "FREQ=DAILY",
+            until=dt.datetime(2026, 1, 1),
+        )
+        assert occ == []
+
+
+class TestErrorAndEdgeCases:
+    def test_unknown_country_raises(self) -> None:
+        with pytest.raises(NotImplementedError):
+            core.is_holiday(dt.date(2026, 1, 1), "ZZ")
+
+    def test_unknown_country_in_holidays_in_year_raises(self) -> None:
+        with pytest.raises(NotImplementedError):
+            core.holidays_in_year(2026, "ZZ")
+
+    def test_unknown_subdivision_raises(self) -> None:
+        with pytest.raises(NotImplementedError):
+            core.is_holiday(dt.date(2026, 1, 1), "US", "ZZ")
+
+    def test_leap_year_feb_29_is_valid_business_day(self) -> None:
+        # 2024-02-29 is a Thursday and not a US holiday -> a business day.
+        d = dt.date(2024, 2, 29)
+        assert d.weekday() == 3
+        assert core.is_business_day(d, "US") is True
+
+    def test_business_days_between_start_after_end_is_negative(self) -> None:
+        fwd = core.business_days_between(dt.date(2026, 6, 22), dt.date(2026, 6, 29), "US")
+        rev = core.business_days_between(dt.date(2026, 6, 29), dt.date(2026, 6, 22), "US")
+        assert fwd == 5
+        assert rev == -5
+
+    def test_business_days_in_range_empty_range_same_day(self) -> None:
+        # A single-day inclusive range over a weekend yields nothing.
+        sat = dt.date(2026, 6, 20)
+        assert core.business_days_in_range(sat, sat, "US") == []
+
+    def test_add_business_days_across_year_boundary(self) -> None:
+        # Wed 2025-12-31 +1 business day -> skip New Year's Day (Thu 2026-01-01)
+        # -> Fri 2026-01-02.
+        result = core.add_business_days(dt.date(2025, 12, 31), 1, "US")
+        assert result == dt.date(2026, 1, 2)
+
+    def test_iso_year_week_year_boundary(self) -> None:
+        # 2021-01-01 is ISO week 53 of ISO-year *2020*.
+        assert core.iso_year_week(dt.date(2021, 1, 1)) == "2020-W53"
+
+    def test_easter_leap_year(self) -> None:
+        assert core.easter(2024) == dt.date(2024, 3, 31)

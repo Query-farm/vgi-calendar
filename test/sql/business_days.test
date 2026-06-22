@@ -1,0 +1,117 @@
+# name: test/sql/business_days.test
+# description: Business-day scalars and the business_days() range table function
+# group: [vgi_calendar]
+
+require-env VGI_CALENDAR_WORKER
+
+statement ok
+LOAD vgi;
+
+statement ok
+ATTACH 'cal' AS cal (TYPE vgi, LOCATION '${VGI_CALENDAR_WORKER}');
+
+# ---------------------------------------------------------------------------
+# is_business_day scalar — weekends and holidays are not business days
+# ---------------------------------------------------------------------------
+
+# 2026-06-20 is a Saturday.
+query I
+SELECT cal.is_business_day(DATE '2026-06-20');
+----
+false
+
+# Christmas 2026 is a holiday.
+query I
+SELECT cal.is_business_day(DATE '2026-12-25');
+----
+false
+
+# 2026-06-23 is a plain Tuesday.
+query I
+SELECT cal.is_business_day(DATE '2026-06-23');
+----
+true
+
+# Per-row over a VALUES table.
+query II rowsort
+SELECT d, cal.is_business_day(d)
+FROM (VALUES (DATE '2026-06-20'), (DATE '2026-06-23'), (DATE '2026-12-25')) AS t(d);
+----
+2026-06-20	false
+2026-06-23	true
+2026-12-25	false
+
+# ---------------------------------------------------------------------------
+# add_business_days scalar — skips weekends + holidays
+# ---------------------------------------------------------------------------
+
+# +2 business days from Thu 2026-12-24 skips Christmas (Fri) + weekend -> Tue 29.
+query I
+SELECT cal.add_business_days(DATE '2026-12-24', 2);
+----
+2026-12-29
+
+# Negative goes backwards: Mon 2026-12-28 -1 business day -> Thu 2026-12-24.
+query I
+SELECT cal.add_business_days(DATE '2026-12-28', -1);
+----
+2026-12-24
+
+# Explicit country overload.
+query I
+SELECT cal.add_business_days(DATE '2026-06-22', 1, 'US');
+----
+2026-06-23
+
+# ---------------------------------------------------------------------------
+# business_days_between scalar — half-open [start, end)
+# ---------------------------------------------------------------------------
+
+# Mon 2026-06-22 .. Mon 2026-06-29 (exclusive) = 5 business days.
+query I
+SELECT cal.business_days_between(DATE '2026-06-22', DATE '2026-06-29');
+----
+5
+
+# Same day -> 0.
+query I
+SELECT cal.business_days_between(DATE '2026-06-23', DATE '2026-06-23');
+----
+0
+
+# Reversed range -> negative count (start > end).
+query I
+SELECT cal.business_days_between(DATE '2026-06-29', DATE '2026-06-22');
+----
+-5
+
+# Explicit country overload.
+query I
+SELECT cal.business_days_between(DATE '2026-06-22', DATE '2026-06-29', 'US');
+----
+5
+
+# ---------------------------------------------------------------------------
+# business_days() set-returning range, inclusive [start, end]
+# ---------------------------------------------------------------------------
+
+query I
+SELECT count(*) FROM cal.business_days(DATE '2026-06-22', DATE '2026-06-26', country := 'US');
+----
+5
+
+# The range skips Christmas (Fri 2026-12-25) and the weekend.
+query I rowsort
+SELECT date FROM cal.business_days(DATE '2026-12-24', DATE '2026-12-28', country := 'US');
+----
+2026-12-24
+2026-12-28
+
+# Reversed range yields no rows.
+query I
+SELECT count(*) FROM cal.business_days(DATE '2026-06-26', DATE '2026-06-22', country := 'US');
+----
+0
+
+statement ok
+DETACH cal;

@@ -1,19 +1,21 @@
-"""Integration tests for the calendar table functions (in-process harness)."""
+"""Integration tests for the calendar set-returning table functions.
+
+Drives ``holidays``, ``business_days`` and ``rrule`` through the real
+bind -> init -> process lifecycle in-process (no worker subprocess). The
+single-value, per-row functions are *scalars* now and are covered in
+``test_scalars.py``.
+"""
 
 from __future__ import annotations
 
 import datetime as dt
 
 import pyarrow as pa
+import pytest
 
 from vgi_calendar.tables import (
-    AddBusinessDaysFunction,
-    BusinessDaysBetweenFunction,
     BusinessDaysFunction,
-    HolidayNameFunction,
     HolidaysFunction,
-    IsBusinessDayFunction,
-    IsHolidayFunction,
     RruleFunction,
 )
 
@@ -26,82 +28,6 @@ def _date(d: dt.date) -> pa.Scalar:
 
 def _ts(d: dt.datetime) -> pa.Scalar:
     return pa.scalar(d, type=pa.timestamp("us"))
-
-
-class TestIsHoliday:
-    def test_christmas_us(self) -> None:
-        table = invoke_table_function(
-            IsHolidayFunction,
-            positional=(_date(dt.date(2026, 12, 25)),),
-            named={"country": pa.scalar("US")},
-        )
-        assert table.column("is_holiday").to_pylist() == [True]
-
-    def test_non_holiday(self) -> None:
-        table = invoke_table_function(
-            IsHolidayFunction,
-            positional=(_date(dt.date(2026, 6, 23)),),
-        )
-        assert table.column("is_holiday").to_pylist() == [False]
-
-    def test_subdivision(self) -> None:
-        table = invoke_table_function(
-            IsHolidayFunction,
-            positional=(_date(dt.date(2026, 3, 31)),),
-            named={"country": pa.scalar("US"), "subdiv": pa.scalar("CA")},
-        )
-        assert table.column("is_holiday").to_pylist() == [True]
-
-
-class TestHolidayName:
-    def test_name(self) -> None:
-        table = invoke_table_function(
-            HolidayNameFunction,
-            positional=(_date(dt.date(2026, 12, 25)),),
-        )
-        assert table.column("holiday_name").to_pylist() == ["Christmas Day"]
-
-    def test_null_when_not_holiday(self) -> None:
-        table = invoke_table_function(
-            HolidayNameFunction,
-            positional=(_date(dt.date(2026, 6, 23)),),
-        )
-        assert table.column("holiday_name").to_pylist() == [None]
-
-
-class TestIsBusinessDay:
-    def test_holiday_is_not_business_day(self) -> None:
-        table = invoke_table_function(
-            IsBusinessDayFunction,
-            positional=(_date(dt.date(2026, 12, 25)),),
-        )
-        assert table.column("is_business_day").to_pylist() == [False]
-
-    def test_weekday_is_business_day(self) -> None:
-        table = invoke_table_function(
-            IsBusinessDayFunction,
-            positional=(_date(dt.date(2026, 6, 23)),),
-        )
-        assert table.column("is_business_day").to_pylist() == [True]
-
-
-class TestAddBusinessDays:
-    def test_skips_holiday_and_weekend(self) -> None:
-        table = invoke_table_function(
-            AddBusinessDaysFunction,
-            positional=(_date(dt.date(2026, 12, 24)), pa.scalar(1, type=pa.int32())),
-            named={"country": pa.scalar("US")},
-        )
-        assert table.column("date").to_pylist() == [dt.date(2026, 12, 28)]
-
-
-class TestBusinessDaysBetween:
-    def test_one_week(self) -> None:
-        table = invoke_table_function(
-            BusinessDaysBetweenFunction,
-            positional=(_date(dt.date(2026, 6, 22)), _date(dt.date(2026, 6, 29))),
-        )
-        assert table.column("business_days").to_pylist() == [5]
 
 
 class TestHolidaysTable:
@@ -132,6 +58,26 @@ class TestHolidaysTable:
         ).num_rows
         assert ca >= us
 
+    def test_observed_shift_flagged(self) -> None:
+        # 2027-12-25 (Christmas) falls on a Saturday; the US calendar observes it
+        # on Friday 2027-12-24 and flags that row observed=True.
+        table = invoke_table_function(
+            HolidaysFunction,
+            positional=(pa.scalar(2027, type=pa.int32()),),
+            named={"country": pa.scalar("US")},
+        )
+        observed_flags = table.column("observed").to_pylist()
+        assert any(observed_flags), "expected at least one observed-shift row in 2027"
+
+    def test_other_country(self) -> None:
+        table = invoke_table_function(
+            HolidaysFunction,
+            positional=(pa.scalar(2026, type=pa.int32()),),
+            named={"country": pa.scalar("GB")},
+        )
+        assert table.num_rows > 0
+        assert all(d.year == 2026 for d in table.column("date").to_pylist())
+
 
 class TestBusinessDaysTable:
     def test_inclusive_range(self) -> None:
@@ -146,6 +92,13 @@ class TestBusinessDaysTable:
             dt.date(2026, 6, 25),
             dt.date(2026, 6, 26),
         ]
+
+    def test_reversed_range_is_empty(self) -> None:
+        table = invoke_table_function(
+            BusinessDaysFunction,
+            positional=(_date(dt.date(2026, 6, 26)), _date(dt.date(2026, 6, 22))),
+        )
+        assert table.num_rows == 0
 
 
 class TestRrule:
@@ -177,3 +130,10 @@ class TestRrule:
             named={"count": pa.scalar(3, type=pa.int32())},
         )
         assert table.num_rows == 3
+
+    def test_malformed_rule_raises(self) -> None:
+        with pytest.raises(ValueError):
+            invoke_table_function(
+                RruleFunction,
+                positional=(_ts(dt.datetime(2026, 1, 1)), pa.scalar("FREQ=BOGUS;COUNT=2")),
+            )
