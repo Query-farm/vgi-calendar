@@ -140,6 +140,24 @@ def holidays_in_year(
     return rows
 
 
+def supported_countries() -> list[tuple[str, str | None]]:
+    """Every ``(country, subdivision)`` pair the :mod:`holidays` library supports.
+
+    Returned sorted by country code. A country with no subdivisions yields a
+    single row whose ``subdivision`` is ``None``; a country with subdivisions
+    yields one row per subdivision (so ``SELECT DISTINCT country`` still lists
+    every supported country). This is how broad the coverage is -- the ``"US"``
+    default of the holiday functions is just a default, not a limit.
+    """
+    out: list[tuple[str, str | None]] = []
+    for country, subdivs in sorted(holidays.list_supported_countries().items()):
+        if subdivs:
+            out.extend((country, s) for s in subdivs)
+        else:
+            out.append((country, None))
+    return out
+
+
 def business_days_in_range(
     start: _dt.date, end: _dt.date, country: str = "US", subdiv: str | None = None
 ) -> list[_dt.date]:

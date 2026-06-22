@@ -4,6 +4,7 @@
 #     "vgi-python",
 #     "holidays>=0.50",
 #     "python-dateutil>=2.9",
+#     "exchange-calendars>=4.5",
 # ]
 #
 # [tool.uv.sources]
@@ -25,6 +26,12 @@ Usage:
     SELECT * FROM cal.holidays(2026, country := 'US', subdiv := 'CA');
     SELECT cal.iso_year_week(DATE '2026-06-22');
     SELECT * FROM cal.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4');
+
+    -- Trading / exchange calendars (default exchange 'XNYS' = NYSE):
+    SELECT cal.is_trading_day(DATE '2026-01-01');             -- false
+    SELECT cal.market_close(DATE '2026-11-27', 'XNYS');       -- early close
+    SELECT * FROM cal.trading_schedule(DATE '2026-11-25', DATE '2026-11-30');
+    SELECT * FROM cal.exchanges();
 """
 
 from __future__ import annotations
@@ -34,8 +41,15 @@ from vgi.catalog import Catalog, Schema
 
 from vgi_calendar.scalars import SCALAR_FUNCTIONS
 from vgi_calendar.tables import TABLE_FUNCTIONS
+from vgi_calendar.trading_scalars import TRADING_SCALAR_FUNCTIONS
+from vgi_calendar.trading_tables import TRADING_TABLE_FUNCTIONS
 
-_FUNCTIONS: list[type] = [*SCALAR_FUNCTIONS, *TABLE_FUNCTIONS]
+_FUNCTIONS: list[type] = [
+    *SCALAR_FUNCTIONS,
+    *TABLE_FUNCTIONS,
+    *TRADING_SCALAR_FUNCTIONS,
+    *TRADING_TABLE_FUNCTIONS,
+]
 
 _CALENDAR_CATALOG = Catalog(
     name="cal",

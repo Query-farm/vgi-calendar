@@ -1,7 +1,7 @@
 [project]
 name = "vgi-calendar"
 version = "0.1.0"
-description = "Holiday, business-day, and recurrence calendar math for DuckDB via VGI"
+description = "Holiday, business-day, recurrence, and trading-calendar math for DuckDB via VGI"
 readme = "README.md"
 keywords = [
     "duckdb",
@@ -13,6 +13,9 @@ keywords = [
     "rrule",
     "recurrence",
     "calendar",
+    "trading-calendar",
+    "exchange-calendars",
+    "market-hours",
 ]
 license = { file = "LICENSE" }
 authors = [{ name = "Query Farm LLC", email = "hello@query.farm" }]
@@ -31,6 +34,7 @@ dependencies = [
     "vgi-python",
     "holidays>=0.50",
     "python-dateutil>=2.9",
+    "exchange-calendars>=4.5",
     "pyarrow",
 ]
 

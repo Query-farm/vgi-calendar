@@ -228,8 +228,68 @@ class RruleFunction(TableFunctionGenerator[_RruleArgs]):
         out.finish()
 
 
+@dataclass(kw_only=True)
+class _NoArgs:
+    """``supported_countries()`` takes no arguments."""
+
+
+_SUPPORTED_COUNTRIES_SCHEMA = pa.schema(
+    [
+        field("country", pa.string(), "ISO-3166 country code.", nullable=False),
+        field("subdivision", pa.string(), "Subdivision/state code, or NULL.", nullable=True),
+    ]
+)
+
+
+@init_single_worker
+@bind_fixed_schema
+class SupportedCountriesFunction(TableFunctionGenerator[_NoArgs]):
+    """Every ``(country, subdivision)`` the holiday functions support.
+
+    Coverage is broad (hundreds of countries + subdivisions); the ``'US'``
+    default of ``is_holiday`` / ``holidays`` / ``business_days`` is only a
+    default. Use this to discover the code to pass as ``country`` / ``subdiv``.
+    """
+
+    FIXED_SCHEMA: ClassVar[pa.Schema] = _SUPPORTED_COUNTRIES_SCHEMA
+
+    class Meta:
+        name = "supported_countries"
+        description = "Every (country, subdivision) the holiday functions support"
+        categories = ["calendar", "holidays"]
+        examples = [
+            FunctionExample(
+                sql="SELECT count(DISTINCT country) FROM cal.supported_countries()",
+                description="How many countries are supported",
+            ),
+            FunctionExample(
+                sql="SELECT subdivision FROM cal.supported_countries() WHERE country = 'DE'",
+                description="German subdivisions (Bundesländer)",
+            ),
+        ]
+
+    @classmethod
+    def cardinality(cls, params: BindParams[_NoArgs]) -> TableCardinality:
+        return TableCardinality(estimate=4000, max=20000)
+
+    @classmethod
+    def process(cls, params: ProcessParams[_NoArgs], state: None, out: OutputCollector) -> None:
+        rows = core.supported_countries()
+        out.emit(
+            pa.RecordBatch.from_pydict(
+                {
+                    "country": [r[0] for r in rows],
+                    "subdivision": [r[1] for r in rows],
+                },
+                schema=params.output_schema,
+            )
+        )
+        out.finish()
+
+
 TABLE_FUNCTIONS: list[type] = [
     HolidaysFunction,
     BusinessDaysFunction,
     RruleFunction,
+    SupportedCountriesFunction,
 ]

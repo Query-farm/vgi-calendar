@@ -6,27 +6,40 @@ Contributor/agent notes. User-facing docs live in `README.md`; this is the
 ## What this is
 
 A [VGI](https://query.farm) worker exposing calendar / holiday / business-day /
-recurrence math to DuckDB/SQL, backed by the Python `holidays` (MIT) and
-`python-dateutil` libraries. `calendar_worker.py` assembles every function into
-one `cal` catalog (single `main` schema) and runs it over stdio. Companion to
-the sibling `vgi-crontimes` (cron-firing math).
+recurrence **and stock-exchange trading-calendar** math to DuckDB/SQL, backed by
+`holidays` (MIT), `python-dateutil`, and `exchange-calendars` (Apache-2.0).
+`calendar_worker.py` assembles every function into one `cal` catalog (single
+`main` schema) over stdio. Companion to the sibling `vgi-crontimes`.
 
 ## Layout
 
 ```
 calendar_worker.py     repo-root stdio entry point; PEP 723 inline deps; main()
 vgi_calendar/
-  core.py              pure datetime math over holidays + dateutil (no Arrow/VGI)
-  scalars.py           per-row scalar functions (arity overloads)
-  tables.py            set-returning table functions (named args)
+  core.py              pure holiday/business-day/recurrence math (holidays + dateutil)
+  trading.py           pure trading-calendar math (exchange-calendars); no Arrow/VGI
+  scalars.py           per-row holiday/business-day scalars (arity overloads)
+  tables.py            holiday tables (named args) + supported_countries()
+  trading_scalars.py   per-row trading scalars (arity overloads, exchange default 'XNYS')
+  trading_tables.py    trading_sessions / trading_schedule / exchanges()
   schema_utils.py      pa.Field comment / column-doc helper
-tests/                 pytest: test_core (pure), test_scalars + test_tables (Client RPC)
+tests/                 pytest: test_core, test_trading (pure), test_scalars + test_tables (Client RPC)
 test/sql/*.test        haybarn-unittest sqllogictest — authoritative E2E
 Makefile               test / test-unit / test-sql / lint
 ```
 
-To add a function: implement in `core.py` (pure), wrap in `scalars.py` or
-`tables.py`, register it in `calendar_worker.py`.
+To add a function: implement the math in `core.py` / `trading.py` (pure), wrap
+it as a scalar or table function in the matching module, register it in
+`calendar_worker.py`'s `_FUNCTIONS`.
+
+## Coverage is broad — "US-centric" is just the default
+
+The `holidays` library supports **hundreds** of countries (501 entries incl.
+subdivisions in 0.99); every holiday/business-day function takes `country` /
+`subdiv`. `'US'` is only the default-arity value. `cal.supported_countries()`
+enumerates the full matrix; `cal.exchanges()` enumerates the ~100 trading
+calendars. Don't "fix" US-centricity by swapping libraries — `holidays` already
+has the broadest coverage of any Python option (`workalendar` covers far fewer).
 
 ## Scalars vs table functions — THE core convention (read first)
 
@@ -60,6 +73,19 @@ overload instead. (This same constraint shapes every sibling worker.)
 3. **DATE ↔ date32, TIMESTAMP ↔ timestamp(us).** Round-trip these correctly;
    `core.py` keeps everything in `datetime.date`/`datetime` and the Arrow
    mapping is in the function wrappers.
+4. **TIMESTAMPTZ scalars need an explicit `Returns(arrow_type=...)`.** A
+   `pa.TimestampArray` return raises `TimestampArray requires explicit
+   arrow_type in Returns()` at class definition unless you pass
+   `Returns(arrow_type=pa.timestamp("us", tz="UTC"))` — see `market_open` /
+   `market_close`. `exchange-calendars` returns UTC tz-aware instants; the
+   worker maps them to DuckDB `TIMESTAMPTZ`. SQL assertions compare against
+   `TIMESTAMPTZ '... +00'` literals so they're timezone-independent.
+5. **`exchange-calendars` coverage window is bounded** (~20yr back to ~1yr
+   ahead). `trading.py` is written bounds-safe via `searchsorted` on
+   `cal.sessions`, so out-of-window dates return `None`/empty rather than
+   raising. It also pulls in `pandas` + `numpy` — this worker is heavier than
+   the pure-`holidays` core; the model/calendar objects are `lru_cache`d per
+   process (the state VGI's pooled worker amortizes).
 
 ## Testing
 

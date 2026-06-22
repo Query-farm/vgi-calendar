@@ -1,0 +1,155 @@
+# name: test/sql/trading.test
+# description: End-to-end ATTACH + query of the trading / exchange-calendar functions
+#              and broad (non-US) holiday coverage discovery.
+# group: [vgi_calendar]
+
+require-env VGI_CALENDAR_WORKER
+
+statement ok
+LOAD vgi;
+
+statement ok
+ATTACH 'cal' AS cal (TYPE vgi, LOCATION '${VGI_CALENDAR_WORKER}');
+
+# ---------------------------------------------------------------------------
+# Trading-day predicates and navigation (default exchange XNYS = NYSE)
+# ---------------------------------------------------------------------------
+
+# New Year's Day 2026 is not an NYSE session; the next weekday is.
+query I
+SELECT cal.is_trading_day(DATE '2026-01-01');
+----
+false
+
+query I
+SELECT cal.is_trading_day(DATE '2026-01-02');
+----
+true
+
+query I
+SELECT cal.next_trading_day(DATE '2026-01-01');
+----
+2026-01-02
+
+# previous_trading_day is strict (before, never equal).
+query I
+SELECT cal.previous_trading_day(DATE '2026-01-02');
+----
+2025-12-31
+
+query I
+SELECT cal.add_trading_days(DATE '2026-01-02', 5);
+----
+2026-01-09
+
+query I
+SELECT cal.add_trading_days(DATE '2026-01-02', -1);
+----
+2025-12-31
+
+# Half-open [start, end) count of sessions in January 2026.
+query I
+SELECT cal.trading_days_between(DATE '2026-01-01', DATE '2026-02-01');
+----
+20
+
+# ---------------------------------------------------------------------------
+# Market hours (UTC instants) + early closes
+# ---------------------------------------------------------------------------
+
+# Compare to TIMESTAMPTZ literals so the assertion is timezone-independent.
+query I
+SELECT cal.market_open(DATE '2026-01-02') = TIMESTAMPTZ '2026-01-02 14:30:00+00';
+----
+true
+
+query I
+SELECT cal.market_close(DATE '2026-01-02') = TIMESTAMPTZ '2026-01-02 21:00:00+00';
+----
+true
+
+# Day after US Thanksgiving: an early close at 18:00 UTC (13:00 ET), not 21:00.
+query I
+SELECT cal.is_early_close(DATE '2026-11-27');
+----
+true
+
+query I
+SELECT cal.market_close(DATE '2026-11-27') = TIMESTAMPTZ '2026-11-27 18:00:00+00';
+----
+true
+
+# Hours are NULL on a non-session.
+query I
+SELECT cal.market_open(DATE '2026-01-01') IS NULL;
+----
+true
+
+# ---------------------------------------------------------------------------
+# Per-exchange behaviour
+# ---------------------------------------------------------------------------
+
+# 2026-07-03 (US July-4-observed holiday) is a normal London session.
+query I
+SELECT cal.is_trading_day(DATE '2026-07-03', 'XLON');
+----
+true
+
+query I
+SELECT cal.is_trading_day(DATE '2026-07-03', 'XNYS');
+----
+false
+
+# Unknown exchange code is a clear error, not a silent wrong answer.
+statement error
+SELECT cal.is_trading_day(DATE '2026-01-02', 'NOPE');
+----
+
+# ---------------------------------------------------------------------------
+# Set-returning trading table functions
+# ---------------------------------------------------------------------------
+
+query I
+SELECT count(*) FROM cal.trading_sessions(DATE '2026-01-01', DATE '2026-01-31');
+----
+20
+
+query I
+SELECT is_early_close FROM cal.trading_schedule(DATE '2026-11-27', DATE '2026-11-27');
+----
+true
+
+query I
+SELECT count(*) FROM cal.exchanges() WHERE code IN ('XNYS', 'XNAS', 'XLON', 'XTKS');
+----
+4
+
+# ---------------------------------------------------------------------------
+# Holiday coverage is broad, not US-only
+# ---------------------------------------------------------------------------
+
+# Hundreds of countries are supported (the 'US' default is just a default).
+query I
+SELECT count(DISTINCT country) > 100 FROM cal.supported_countries();
+----
+true
+
+# Subdivisions are exposed (German Bundesländer).
+query I
+SELECT count(*) > 0 FROM cal.supported_countries() WHERE country = 'DE' AND subdivision = 'BY';
+----
+true
+
+# Bastille Day is a French national holiday, not a US one.
+query I
+SELECT cal.is_holiday(DATE '2026-07-14', 'FR');
+----
+true
+
+query I
+SELECT cal.is_holiday(DATE '2026-07-14', 'US');
+----
+false
+
+statement ok
+DETACH cal;

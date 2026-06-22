@@ -3,10 +3,14 @@
 [![CI](https://github.com/Query-farm/vgi-calendar/actions/workflows/ci.yml/badge.svg)](https://github.com/Query-farm/vgi-calendar/actions/workflows/ci.yml)
 
 A [VGI](https://query.farm) worker that brings **calendar math** into DuckDB/SQL:
-public holidays, business-day arithmetic, ISO week labels, and RFC-5545
-recurrence expansion. Holiday data comes from the
-[`holidays`](https://pypi.org/project/holidays/) library (MIT); recurrence and
-Easter from [`python-dateutil`](https://pypi.org/project/python-dateutil/).
+public holidays for **hundreds of countries**, business-day arithmetic, ISO week
+labels, RFC-5545 recurrence expansion, and **stock-exchange trading calendars**
+(sessions, market hours, early closes for NYSE/Nasdaq/LSE/Tokyo/…). Holiday data
+comes from the [`holidays`](https://pypi.org/project/holidays/) library (MIT),
+recurrence and Easter from
+[`python-dateutil`](https://pypi.org/project/python-dateutil/), and trading
+calendars from
+[`exchange-calendars`](https://pypi.org/project/exchange-calendars/) (Apache-2.0).
 
 ```sql
 INSTALL vgi FROM community; LOAD vgi;
@@ -15,10 +19,20 @@ ATTACH 'cal' (TYPE vgi, LOCATION 'uv run calendar_worker.py');
 SELECT cal.easter(2026);                                  -- DATE 2026-04-05
 SELECT cal.iso_year_week(DATE '2026-06-22');              -- '2026-W26'
 SELECT cal.is_holiday(DATE '2026-12-25');                 -- true (country defaults to 'US')
-SELECT cal.is_holiday(DATE '2026-03-31', 'US', 'CA');     -- true (California)
-SELECT * FROM cal.holidays(2026, country := 'US', subdiv := 'CA');
+SELECT cal.is_holiday(DATE '2026-07-14', 'FR');           -- true (Bastille Day)
+SELECT * FROM cal.holidays(2026, country := 'DE', subdiv := 'BY');  -- Bavaria
 SELECT * FROM cal.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4');
+
+-- Trading calendars (default exchange 'XNYS' = NYSE):
+SELECT cal.is_trading_day(DATE '2026-01-01');             -- false (market holiday)
+SELECT cal.market_close(DATE '2026-11-27');               -- early close after Thanksgiving
+SELECT * FROM cal.trading_schedule(DATE '2026-11-25', DATE '2026-11-30');
 ```
+
+> **Not US-centric.** The `'US'` you see in examples is only a *default*. The
+> holiday functions cover **every country `holidays` supports** (run
+> `SELECT count(DISTINCT country) FROM cal.supported_countries();` — hundreds),
+> and trading functions cover every market in `cal.exchanges()`.
 
 ## Scalars (per-row) vs. table functions (set-returning)
 
@@ -61,12 +75,26 @@ The split follows what the VGI SDK allows for each function shape:
 | `easter` | scalar | `(year INT)` | `DATE` |
 | `iso_week` | scalar | `(date DATE)` | `INT` |
 | `iso_year_week` | scalar | `(date DATE)` | `VARCHAR` (e.g. `'2026-W26'`) |
+| `is_trading_day` | scalar | `(date DATE[, exchange])` | `BOOLEAN` |
+| `next_trading_day` | scalar | `(date DATE[, exchange])` | `DATE` |
+| `previous_trading_day` | scalar | `(date DATE[, exchange])` | `DATE` |
+| `add_trading_days` | scalar | `(date DATE, n INT[, exchange])` | `DATE` |
+| `trading_days_between` | scalar | `(start DATE, end DATE[, exchange])` | `INT` |
+| `market_open` | scalar | `(date DATE[, exchange])` | `TIMESTAMPTZ` (UTC, NULL if not a session) |
+| `market_close` | scalar | `(date DATE[, exchange])` | `TIMESTAMPTZ` (UTC, NULL if not a session) |
+| `is_early_close` | scalar | `(date DATE[, exchange])` | `BOOLEAN` |
 | `holidays` | table | `(year INT, country := 'US', subdiv := NULL)` | `(date DATE, name VARCHAR, observed BOOLEAN)` |
 | `business_days` | table | `(start DATE, end DATE, country := 'US', subdiv := NULL)` | `(date DATE)` |
 | `rrule` | table | `(dtstart TIMESTAMP, rule VARCHAR, count := NULL, until := NULL)` | `(seq BIGINT, occurrence TIMESTAMP)` |
+| `trading_sessions` | table | `(start DATE, end DATE, exchange := 'XNYS')` | `(date DATE)` |
+| `trading_schedule` | table | `(start DATE, end DATE, exchange := 'XNYS')` | `(session DATE, market_open TIMESTAMPTZ, market_close TIMESTAMPTZ, is_early_close BOOLEAN)` |
+| `exchanges` | table | `()` | `(code VARCHAR)` |
+| `supported_countries` | table | `()` | `(country VARCHAR, subdivision VARCHAR)` |
 
-The `country` default is `'US'`; for `is_holiday` / `holiday_name` /
-`is_business_day` a `subdiv` overload selects a state/province calendar.
+The `country` default is `'US'` and the `exchange` default is `'XNYS'` (NYSE);
+for `is_holiday` / `holiday_name` / `is_business_day` a `subdiv` overload selects
+a state/province calendar. Discover valid codes with `cal.supported_countries()`
+and `cal.exchanges()`.
 
 ### Holidays & business days
 
@@ -108,9 +136,40 @@ SELECT * FROM cal.rrule(
   TIMESTAMP '2026-01-06', 'FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH', count := 10);
 ```
 
+### Trading / exchange calendars
+
+Trading functions answer "is the market open, and when?" for any of the ~100
+exchanges in [`exchange-calendars`](https://pypi.org/project/exchange-calendars/)
+— NYSE (`XNYS`, the default), Nasdaq (`XNAS`), London (`XLON`), Tokyo (`XTKS`),
+and more (`SELECT * FROM cal.exchanges()`). A **session** is a trading day;
+`market_open` / `market_close` are timezone-aware **UTC** instants, and
+`is_early_close` flags shortened sessions (e.g. the day after US Thanksgiving).
+
+```sql
+-- align fills to the next session and tag end-of-day vs intraday
+SELECT id, trade_ts,
+       next_trading_day(trade_ts::DATE)                       AS settles_on,
+       trade_ts >= market_close(trade_ts::DATE, 'XNYS')       AS after_hours
+FROM fills;
+
+-- the trading schedule around a holiday week (note the early close)
+SELECT * FROM cal.trading_schedule(DATE '2026-11-25', DATE '2026-11-30');
+
+-- count NYSE sessions in a quarter (half-open [start, end))
+SELECT trading_days_between(DATE '2026-01-01', DATE '2026-04-01');
+```
+
+Coverage is the `exchange-calendars` default window (roughly two decades back to
+about a year ahead — future market holidays are only defined so far); a date
+outside that window resolves to `NULL` / no rows rather than erroring. For
+*holiday-only* market data without open/close times the `holidays` library also
+ships financial calendars, but `exchange-calendars` is used here because it
+provides actual session hours and early closes.
+
 For **cron**-style firing math (`0 9 * * *` → next fire times), see the companion
 worker [vgi-crontimes](https://github.com/Query-farm/vgi-crontimes); `vgi-calendar`
-covers the holiday / business-day / iCalendar-recurrence side of scheduling.
+covers the holiday / business-day / iCalendar-recurrence / trading-calendar side
+of scheduling.
 
 ## Dependencies & licensing
 
@@ -119,11 +178,13 @@ covers the holiday / business-day / iCalendar-recurrence side of scheduling.
 | `vgi-calendar` (this worker) | MIT |
 | [`holidays`](https://pypi.org/project/holidays/) | MIT |
 | [`python-dateutil`](https://pypi.org/project/python-dateutil/) | Apache-2.0 / BSD-3-Clause |
+| [`exchange-calendars`](https://pypi.org/project/exchange-calendars/) | Apache-2.0 |
 | [`vgi-python`](https://github.com/Query-farm/vgi-python) | Query Farm Source-Available |
 
-Holiday definitions are only as complete as the `holidays` library's coverage
-for a given country/subdivision and year; consult its docs for the authoritative
-support matrix.
+Holiday and trading-calendar definitions are only as complete as the `holidays`
+and `exchange-calendars` libraries' coverage for a given country / exchange and
+year; consult their docs for the authoritative support matrices. (`exchange-calendars`
+pulls in `pandas` + `numpy`, so this worker is heavier than the pure-`holidays` core.)
 
 ## Local development
 
@@ -151,8 +212,11 @@ calendar_worker.py       entry point; assembles the `cal` catalog (inline uv scr
 Makefile                 test / test-unit / test-sql targets
 vgi_calendar/
   core.py                pure datetime math over holidays + dateutil (no Arrow/VGI)
-  scalars.py             per-row scalars (arity overloads): is_holiday, business days, easter, iso, ...
-  tables.py              named-arg table functions: holidays, business_days, rrule
+  trading.py             pure trading-calendar math over exchange-calendars (no Arrow/VGI)
+  scalars.py             per-row holiday/business-day scalars (arity overloads)
+  tables.py              named-arg holiday tables: holidays, business_days, rrule, supported_countries
+  trading_scalars.py     per-row trading scalars: is_trading_day, market_open/close, ...
+  trading_tables.py      trading tables: trading_sessions, trading_schedule, exchanges
   schema_utils.py        Arrow field/comment helpers
 tests/
   harness.py             in-process bind→init→process driver
@@ -160,6 +224,7 @@ tests/
   test_tables.py         table-function integration tests
   test_scalars.py        per-row scalar overloads via vgi.client.Client
   test_client.py         end-to-end scalar + table tests via vgi.client.Client
+  test_trading.py        trading-calendar + broad-coverage unit/edge tests
 test/sql/
   *.test                 DuckDB sqllogictest end-to-end cases (haybarn-unittest)
 ```
