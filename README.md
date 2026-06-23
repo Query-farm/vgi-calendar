@@ -4,7 +4,9 @@
 
 <p align="center"><em>A <a href="https://query.farm">Query.Farm</a> VGI worker for DuckDB.</em></p>
 
-# vgi-calendar
+# Holidays, Business Days, Recurrence & Trading Calendars in DuckDB
+
+> **vgi-calendar** · a [Query.Farm](https://query.farm) VGI worker
 
 [![CI](https://github.com/Query-farm/vgi-calendar/actions/workflows/ci.yml/badge.svg)](https://github.com/Query-farm/vgi-calendar/actions/workflows/ci.yml)
 
