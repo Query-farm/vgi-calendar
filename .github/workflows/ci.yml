@@ -124,12 +124,14 @@ jobs:
         run: |
           # Absolute paths: run-integration.sh cd's into a staging dir before
           # invoking the runner, so relative paths would not resolve. The worker
-          # is a repo-root PEP 723 script (no console-script), so we point uv at
-          # it via --directory "$PWD" so it resolves regardless of cwd.
+          # is a repo-root PEP 723 script (no console-script); `uv run` reads its
+          # inline deps and resolves them from PyPI, so an absolute script path
+          # spawns correctly regardless of cwd — exactly how DuckDB ATTACH and
+          # the pytest fixture drive it.
           UNITTEST="$PWD/$(find hb -name 'haybarn-unittest' -type f | head -1)"
           chmod +x "$UNITTEST"
           echo "HAYBARN_UNITTEST=$UNITTEST" >> "$GITHUB_ENV"
-          echo "VGI_CALENDAR_WORKER=uv run --directory $PWD --python 3.13 calendar_worker.py" >> "$GITHUB_ENV"
+          echo "VGI_CALENDAR_WORKER=uv run --python 3.13 $PWD/calendar_worker.py" >> "$GITHUB_ENV"
 
       - name: Run extension integration suite
         run: ci/run-integration.sh

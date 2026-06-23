@@ -1,14 +1,11 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#     "vgi-python",
+#     "vgi-python>=0.8.3",
 #     "holidays>=0.50",
 #     "python-dateutil>=2.9",
 #     "exchange-calendars>=4.5",
 # ]
-#
-# [tool.uv.sources]
-# vgi-python = { path = "../vgi-python" }
 # ///
 """VGI worker exposing calendar / holiday / business-day / recurrence math to SQL.
 
