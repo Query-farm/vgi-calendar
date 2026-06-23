@@ -171,7 +171,5 @@ def trading_schedule(
     rows: list[tuple[_dt.date, _dt.datetime, _dt.datetime, bool]] = []
     for d in trading_sessions_in_range(start, end, exchange):
         ts = _ts(d)
-        rows.append(
-            (d, _to_utc_dt(cal.session_open(ts)), _to_utc_dt(cal.session_close(ts)), ts in early)
-        )
+        rows.append((d, _to_utc_dt(cal.session_open(ts)), _to_utc_dt(cal.session_close(ts)), ts in early))
     return rows

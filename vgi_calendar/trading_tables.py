@@ -89,9 +89,7 @@ class TradingSessionsFunction(TableFunctionGenerator[_TradingSessionsArgs]):
         return TableCardinality(estimate=None, max=None)
 
     @classmethod
-    def process(
-        cls, params: ProcessParams[_TradingSessionsArgs], state: None, out: OutputCollector
-    ) -> None:
+    def process(cls, params: ProcessParams[_TradingSessionsArgs], state: None, out: OutputCollector) -> None:
         a = params.args
         days = trading.trading_sessions_in_range(a.start, a.end, a.exchange)
         out.emit(pa.RecordBatch.from_pydict({"date": days}, schema=params.output_schema))
@@ -146,9 +144,7 @@ class TradingScheduleFunction(TableFunctionGenerator[_TradingScheduleArgs]):
         return TableCardinality(estimate=None, max=None)
 
     @classmethod
-    def process(
-        cls, params: ProcessParams[_TradingScheduleArgs], state: None, out: OutputCollector
-    ) -> None:
+    def process(cls, params: ProcessParams[_TradingScheduleArgs], state: None, out: OutputCollector) -> None:
         a = params.args
         rows = trading.trading_schedule(a.start, a.end, a.exchange)
         out.emit(
@@ -204,11 +200,7 @@ class ExchangesFunction(TableFunctionGenerator[_NoArgs]):
 
     @classmethod
     def process(cls, params: ProcessParams[_NoArgs], state: None, out: OutputCollector) -> None:
-        out.emit(
-            pa.RecordBatch.from_pydict(
-                {"code": trading.list_exchanges()}, schema=params.output_schema
-            )
-        )
+        out.emit(pa.RecordBatch.from_pydict({"code": trading.list_exchanges()}, schema=params.output_schema))
         out.finish()
 
 
