@@ -68,8 +68,12 @@ jobs:
       - name: Type check (mypy)
         run: uv run mypy vgi_calendar/ calendar_worker.py
 
+      # Run pydoclint in an isolated tool env (uvx): it needs
+      # `docstring-parser-fork`, but vgi-rpc pulls in plain `docstring-parser`,
+      # and the two share the `docstring_parser` import namespace -- installed
+      # together their file order is nondeterministic and can break the import.
       - name: Docstring lint (pydoclint)
-        run: uv run pydoclint vgi_calendar/ calendar_worker.py
+        run: uvx --from "pydoclint>=0.5" pydoclint vgi_calendar/ calendar_worker.py
 
   # Resolve the latest published haybarn release once, so the whole matrix tests
   # the same version (and we never hardcode/pin it).
