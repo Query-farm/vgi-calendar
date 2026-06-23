@@ -78,9 +78,7 @@ def add_business_days(date: _dt.date, n: int, country: str = "US", subdiv: str |
     return cur
 
 
-def business_days_between(
-    start: _dt.date, end: _dt.date, country: str = "US", subdiv: str | None = None
-) -> int:
+def business_days_between(start: _dt.date, end: _dt.date, country: str = "US", subdiv: str | None = None) -> int:
     """Count business days in ``[start, end)`` -- half-open, ``start`` inclusive.
 
     Returns a count: ``business_days_between(d, d)`` is ``0``. If ``end`` is
@@ -121,9 +119,7 @@ def iso_year_week(date: _dt.date) -> str:
     return f"{iso[0]:04d}-W{iso[1]:02d}"
 
 
-def holidays_in_year(
-    year: int, country: str = "US", subdiv: str | None = None
-) -> list[tuple[_dt.date, str, bool]]:
+def holidays_in_year(year: int, country: str = "US", subdiv: str | None = None) -> list[tuple[_dt.date, str, bool]]:
     """All holidays in ``year`` as ``(date, name, observed)`` triples, date-sorted.
 
     ``observed`` is ``True`` when the entry is an *observed* shift (the library

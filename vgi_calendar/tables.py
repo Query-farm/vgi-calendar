@@ -75,6 +75,8 @@ class HolidaysFunction(TableFunctionGenerator[_HolidaysArgs]):
     FIXED_SCHEMA: ClassVar[pa.Schema] = _HOLIDAYS_SCHEMA
 
     class Meta:
+        """Function metadata."""
+
         name = "holidays"
         description = "All public holidays in a year (date, name, observed)"
         categories = ["calendar", "holidays"]
@@ -91,10 +93,12 @@ class HolidaysFunction(TableFunctionGenerator[_HolidaysArgs]):
 
     @classmethod
     def cardinality(cls, params: BindParams[_HolidaysArgs]) -> TableCardinality:
+        """Estimate the output row count for the query planner."""
         return TableCardinality(estimate=40, max=400)
 
     @classmethod
     def process(cls, params: ProcessParams[_HolidaysArgs], state: None, out: OutputCollector) -> None:
+        """Emit the function's output rows into the collector."""
         a = params.args
         rows = core.holidays_in_year(a.year, a.country, a.subdiv)
         out.emit(
@@ -120,9 +124,7 @@ class _BusinessDaysArgs:
     subdiv: Annotated[str | None, _SUBDIV]
 
 
-_BUSINESS_DAYS_SCHEMA = pa.schema(
-    [field("date", pa.date32(), "A business day in the range.", nullable=False)]
-)
+_BUSINESS_DAYS_SCHEMA = pa.schema([field("date", pa.date32(), "A business day in the range.", nullable=False)])
 
 
 @init_single_worker
@@ -133,6 +135,8 @@ class BusinessDaysFunction(TableFunctionGenerator[_BusinessDaysArgs]):
     FIXED_SCHEMA: ClassVar[pa.Schema] = _BUSINESS_DAYS_SCHEMA
 
     class Meta:
+        """Function metadata."""
+
         name = "business_days"
         description = "Every business day in an inclusive [start, end] range"
         categories = ["calendar", "business-days"]
@@ -145,10 +149,12 @@ class BusinessDaysFunction(TableFunctionGenerator[_BusinessDaysArgs]):
 
     @classmethod
     def cardinality(cls, params: BindParams[_BusinessDaysArgs]) -> TableCardinality:
+        """Estimate the output row count for the query planner."""
         return TableCardinality(estimate=None, max=None)
 
     @classmethod
     def process(cls, params: ProcessParams[_BusinessDaysArgs], state: None, out: OutputCollector) -> None:
+        """Emit the function's output rows into the collector."""
         a = params.args
         days = core.business_days_in_range(a.start, a.end, a.country, a.subdiv)
         out.emit(pa.RecordBatch.from_pydict({"date": days}, schema=params.output_schema))
@@ -159,9 +165,7 @@ class BusinessDaysFunction(TableFunctionGenerator[_BusinessDaysArgs]):
 class _RruleArgs:
     """``rrule(dtstart, rule, count := ..., until := ...)``."""
 
-    dtstart: Annotated[
-        _dt.datetime, Arg(0, arrow_type=pa.timestamp("us"), doc="Recurrence start (TIMESTAMP).")
-    ]
+    dtstart: Annotated[_dt.datetime, Arg(0, arrow_type=pa.timestamp("us"), doc="Recurrence start (TIMESTAMP).")]
     rule: Annotated[str, Arg(1, arrow_type=pa.string(), doc="RFC-5545 RRULE body or full string.")]
     count: Annotated[int | None, Arg("count", default=None, arrow_type=pa.int32(), doc="Max occurrences.")]
     until: Annotated[
@@ -186,6 +190,8 @@ class RruleFunction(TableFunctionGenerator[_RruleArgs]):
     FIXED_SCHEMA: ClassVar[pa.Schema] = _RRULE_SCHEMA
 
     class Meta:
+        """Function metadata."""
+
         name = "rrule"
         description = "Expand an RFC-5545 recurrence rule (dateutil) into timestamps"
         categories = ["calendar", "recurrence"]
@@ -205,15 +211,13 @@ class RruleFunction(TableFunctionGenerator[_RruleArgs]):
 
     @classmethod
     def cardinality(cls, params: BindParams[_RruleArgs]) -> TableCardinality:
+        """Estimate the output row count for the query planner."""
         n = params.args.count
-        return (
-            TableCardinality(estimate=n, max=n)
-            if n is not None
-            else TableCardinality(estimate=None, max=None)
-        )
+        return TableCardinality(estimate=n, max=n) if n is not None else TableCardinality(estimate=None, max=None)
 
     @classmethod
     def process(cls, params: ProcessParams[_RruleArgs], state: None, out: OutputCollector) -> None:
+        """Emit the function's output rows into the collector."""
         a = params.args
         occ = core.expand_rrule(a.dtstart, a.rule, count=a.count, until=a.until)
         out.emit(
@@ -254,6 +258,8 @@ class SupportedCountriesFunction(TableFunctionGenerator[_NoArgs]):
     FIXED_SCHEMA: ClassVar[pa.Schema] = _SUPPORTED_COUNTRIES_SCHEMA
 
     class Meta:
+        """Function metadata."""
+
         name = "supported_countries"
         description = "Every (country, subdivision) the holiday functions support"
         categories = ["calendar", "holidays"]
@@ -270,10 +276,12 @@ class SupportedCountriesFunction(TableFunctionGenerator[_NoArgs]):
 
     @classmethod
     def cardinality(cls, params: BindParams[_NoArgs]) -> TableCardinality:
+        """Estimate the output row count for the query planner."""
         return TableCardinality(estimate=4000, max=20000)
 
     @classmethod
     def process(cls, params: ProcessParams[_NoArgs], state: None, out: OutputCollector) -> None:
+        """Emit the function's output rows into the collector."""
         rows = core.supported_countries()
         out.emit(
             pa.RecordBatch.from_pydict(

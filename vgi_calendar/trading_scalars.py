@@ -50,6 +50,8 @@ class IsTradingDayFunction(ScalarFunction):
     """``is_trading_day(date)`` -- True if the date is an NYSE trading session."""
 
     class Meta:
+        """Function metadata."""
+
         name = "is_trading_day"
         description = "True if a date is a trading session (exchange defaults to 'XNYS')"
         categories = ["calendar", "trading"]
@@ -65,6 +67,7 @@ class IsTradingDayFunction(ScalarFunction):
         cls,
         date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
     ) -> Annotated[pa.BooleanArray, Returns()]:
+        """Compute the result column for each input row."""
         return _is_trading_day_column(date, exchange=_DEFAULT)
 
 
@@ -72,6 +75,8 @@ class IsTradingDayExchangeFunction(ScalarFunction):
     """``is_trading_day(date, exchange)`` -- True if a session on ``exchange``."""
 
     class Meta:
+        """Function metadata."""
+
         name = "is_trading_day"
         description = "True if a date is a trading session on an exchange"
         categories = ["calendar", "trading"]
@@ -88,6 +93,7 @@ class IsTradingDayExchangeFunction(ScalarFunction):
         date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
         exchange: Annotated[str, ConstParam(_EXCHANGE_DOC)],
     ) -> Annotated[pa.BooleanArray, Returns()]:
+        """Compute the result column for each input row."""
         return _is_trading_day_column(date, exchange=exchange)
 
 
@@ -105,6 +111,8 @@ class NextTradingDayFunction(ScalarFunction):
     """``next_trading_day(date)`` -- first session strictly after ``date``."""
 
     class Meta:
+        """Function metadata."""
+
         name = "next_trading_day"
         description = "First trading session strictly after a date (exchange 'XNYS')"
         categories = ["calendar", "trading"]
@@ -120,6 +128,7 @@ class NextTradingDayFunction(ScalarFunction):
         cls,
         date: Annotated[pa.Date32Array, Param(doc="Reference date.")],
     ) -> Annotated[pa.Date32Array, Returns()]:
+        """Compute the result column for each input row."""
         return _next_trading_day_column(date, exchange=_DEFAULT)
 
 
@@ -127,6 +136,8 @@ class NextTradingDayExchangeFunction(ScalarFunction):
     """``next_trading_day(date, exchange)`` -- next session on ``exchange``."""
 
     class Meta:
+        """Function metadata."""
+
         name = "next_trading_day"
         description = "First trading session strictly after a date on an exchange"
         categories = ["calendar", "trading"]
@@ -143,6 +154,7 @@ class NextTradingDayExchangeFunction(ScalarFunction):
         date: Annotated[pa.Date32Array, Param(doc="Reference date.")],
         exchange: Annotated[str, ConstParam(_EXCHANGE_DOC)],
     ) -> Annotated[pa.Date32Array, Returns()]:
+        """Compute the result column for each input row."""
         return _next_trading_day_column(date, exchange=exchange)
 
 
@@ -160,6 +172,8 @@ class PreviousTradingDayFunction(ScalarFunction):
     """``previous_trading_day(date)`` -- last session strictly before ``date``."""
 
     class Meta:
+        """Function metadata."""
+
         name = "previous_trading_day"
         description = "Last trading session strictly before a date (exchange 'XNYS')"
         categories = ["calendar", "trading"]
@@ -175,6 +189,7 @@ class PreviousTradingDayFunction(ScalarFunction):
         cls,
         date: Annotated[pa.Date32Array, Param(doc="Reference date.")],
     ) -> Annotated[pa.Date32Array, Returns()]:
+        """Compute the result column for each input row."""
         return _previous_trading_day_column(date, exchange=_DEFAULT)
 
 
@@ -182,6 +197,8 @@ class PreviousTradingDayExchangeFunction(ScalarFunction):
     """``previous_trading_day(date, exchange)`` -- previous session on ``exchange``."""
 
     class Meta:
+        """Function metadata."""
+
         name = "previous_trading_day"
         description = "Last trading session strictly before a date on an exchange"
         categories = ["calendar", "trading"]
@@ -198,6 +215,7 @@ class PreviousTradingDayExchangeFunction(ScalarFunction):
         date: Annotated[pa.Date32Array, Param(doc="Reference date.")],
         exchange: Annotated[str, ConstParam(_EXCHANGE_DOC)],
     ) -> Annotated[pa.Date32Array, Returns()]:
+        """Compute the result column for each input row."""
         return _previous_trading_day_column(date, exchange=exchange)
 
 
@@ -218,6 +236,8 @@ class AddTradingDaysFunction(ScalarFunction):
     """``add_trading_days(date, n)`` -- advance by N NYSE sessions."""
 
     class Meta:
+        """Function metadata."""
+
         name = "add_trading_days"
         description = "Advance a date by N trading sessions, skipping non-sessions (exchange 'XNYS')"
         categories = ["calendar", "trading"]
@@ -234,6 +254,7 @@ class AddTradingDaysFunction(ScalarFunction):
         date: Annotated[pa.Date32Array, Param(doc="Starting date.")],
         n: Annotated[pa.Int32Array, Param(doc="Sessions to add (negative goes backwards).")],
     ) -> Annotated[pa.Date32Array, Returns()]:
+        """Compute the result column for each input row."""
         return _add_trading_days_column(date, n, exchange=_DEFAULT)
 
 
@@ -241,6 +262,8 @@ class AddTradingDaysExchangeFunction(ScalarFunction):
     """``add_trading_days(date, n, exchange)`` -- advance by N sessions on ``exchange``."""
 
     class Meta:
+        """Function metadata."""
+
         name = "add_trading_days"
         description = "Advance a date by N trading sessions on an exchange"
         categories = ["calendar", "trading"]
@@ -258,6 +281,7 @@ class AddTradingDaysExchangeFunction(ScalarFunction):
         n: Annotated[pa.Int32Array, Param(doc="Sessions to add (negative goes backwards).")],
         exchange: Annotated[str, ConstParam(_EXCHANGE_DOC)],
     ) -> Annotated[pa.Date32Array, Returns()]:
+        """Compute the result column for each input row."""
         return _add_trading_days_column(date, n, exchange=exchange)
 
 
@@ -266,9 +290,7 @@ class AddTradingDaysExchangeFunction(ScalarFunction):
 # ---------------------------------------------------------------------------
 
 
-def _trading_days_between_column(
-    start: pa.Date32Array, end: pa.Date32Array, *, exchange: str
-) -> pa.Int32Array:
+def _trading_days_between_column(start: pa.Date32Array, end: pa.Date32Array, *, exchange: str) -> pa.Int32Array:
     out = [
         None if s is None or e is None else trading.trading_days_between(s, e, exchange)
         for s, e in zip(start.to_pylist(), end.to_pylist(), strict=True)
@@ -280,6 +302,8 @@ class TradingDaysBetweenFunction(ScalarFunction):
     """``trading_days_between(start, end)`` -- count sessions in ``[start, end)``."""
 
     class Meta:
+        """Function metadata."""
+
         name = "trading_days_between"
         description = "Count trading sessions in [start, end), start inclusive (exchange 'XNYS')"
         categories = ["calendar", "trading"]
@@ -296,6 +320,7 @@ class TradingDaysBetweenFunction(ScalarFunction):
         start: Annotated[pa.Date32Array, Param(doc="Start date (inclusive).")],
         end: Annotated[pa.Date32Array, Param(doc="End date (exclusive).")],
     ) -> Annotated[pa.Int32Array, Returns()]:
+        """Compute the result column for each input row."""
         return _trading_days_between_column(start, end, exchange=_DEFAULT)
 
 
@@ -303,6 +328,8 @@ class TradingDaysBetweenExchangeFunction(ScalarFunction):
     """``trading_days_between(start, end, exchange)`` -- count on ``exchange``."""
 
     class Meta:
+        """Function metadata."""
+
         name = "trading_days_between"
         description = "Count trading sessions in [start, end) on an exchange (start inclusive)"
         categories = ["calendar", "trading"]
@@ -320,6 +347,7 @@ class TradingDaysBetweenExchangeFunction(ScalarFunction):
         end: Annotated[pa.Date32Array, Param(doc="End date (exclusive).")],
         exchange: Annotated[str, ConstParam(_EXCHANGE_DOC)],
     ) -> Annotated[pa.Int32Array, Returns()]:
+        """Compute the result column for each input row."""
         return _trading_days_between_column(start, end, exchange=exchange)
 
 
@@ -342,6 +370,8 @@ class MarketOpenFunction(ScalarFunction):
     """``market_open(date)`` -- UTC open instant, or NULL if not a session."""
 
     class Meta:
+        """Function metadata."""
+
         name = "market_open"
         description = "UTC market-open instant for a date, NULL if not a session (exchange 'XNYS')"
         categories = ["calendar", "trading"]
@@ -357,6 +387,7 @@ class MarketOpenFunction(ScalarFunction):
         cls,
         date: Annotated[pa.Date32Array, Param(doc="Session date.")],
     ) -> Annotated[pa.TimestampArray, Returns(arrow_type=_TZ_TS)]:
+        """Compute the result column for each input row."""
         return _market_open_column(date, exchange=_DEFAULT)
 
 
@@ -364,6 +395,8 @@ class MarketOpenExchangeFunction(ScalarFunction):
     """``market_open(date, exchange)`` -- UTC open instant on ``exchange``."""
 
     class Meta:
+        """Function metadata."""
+
         name = "market_open"
         description = "UTC market-open instant for a date on an exchange, NULL if not a session"
         categories = ["calendar", "trading"]
@@ -380,6 +413,7 @@ class MarketOpenExchangeFunction(ScalarFunction):
         date: Annotated[pa.Date32Array, Param(doc="Session date.")],
         exchange: Annotated[str, ConstParam(_EXCHANGE_DOC)],
     ) -> Annotated[pa.TimestampArray, Returns(arrow_type=_TZ_TS)]:
+        """Compute the result column for each input row."""
         return _market_open_column(date, exchange=exchange)
 
 
@@ -387,6 +421,8 @@ class MarketCloseFunction(ScalarFunction):
     """``market_close(date)`` -- UTC close instant, or NULL if not a session."""
 
     class Meta:
+        """Function metadata."""
+
         name = "market_close"
         description = "UTC market-close instant for a date, NULL if not a session (exchange 'XNYS')"
         categories = ["calendar", "trading"]
@@ -402,6 +438,7 @@ class MarketCloseFunction(ScalarFunction):
         cls,
         date: Annotated[pa.Date32Array, Param(doc="Session date.")],
     ) -> Annotated[pa.TimestampArray, Returns(arrow_type=_TZ_TS)]:
+        """Compute the result column for each input row."""
         return _market_close_column(date, exchange=_DEFAULT)
 
 
@@ -409,6 +446,8 @@ class MarketCloseExchangeFunction(ScalarFunction):
     """``market_close(date, exchange)`` -- UTC close instant on ``exchange``."""
 
     class Meta:
+        """Function metadata."""
+
         name = "market_close"
         description = "UTC market-close instant for a date on an exchange, NULL if not a session"
         categories = ["calendar", "trading"]
@@ -425,6 +464,7 @@ class MarketCloseExchangeFunction(ScalarFunction):
         date: Annotated[pa.Date32Array, Param(doc="Session date.")],
         exchange: Annotated[str, ConstParam(_EXCHANGE_DOC)],
     ) -> Annotated[pa.TimestampArray, Returns(arrow_type=_TZ_TS)]:
+        """Compute the result column for each input row."""
         return _market_close_column(date, exchange=exchange)
 
 
@@ -442,6 +482,8 @@ class IsEarlyCloseFunction(ScalarFunction):
     """``is_early_close(date)`` -- True if the session closes early."""
 
     class Meta:
+        """Function metadata."""
+
         name = "is_early_close"
         description = "True if a date is a session that closes early (exchange 'XNYS')"
         categories = ["calendar", "trading"]
@@ -457,6 +499,7 @@ class IsEarlyCloseFunction(ScalarFunction):
         cls,
         date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
     ) -> Annotated[pa.BooleanArray, Returns()]:
+        """Compute the result column for each input row."""
         return _is_early_close_column(date, exchange=_DEFAULT)
 
 
@@ -464,6 +507,8 @@ class IsEarlyCloseExchangeFunction(ScalarFunction):
     """``is_early_close(date, exchange)`` -- early-close session on ``exchange``."""
 
     class Meta:
+        """Function metadata."""
+
         name = "is_early_close"
         description = "True if a date is a session that closes early on an exchange"
         categories = ["calendar", "trading"]
@@ -480,6 +525,7 @@ class IsEarlyCloseExchangeFunction(ScalarFunction):
         date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
         exchange: Annotated[str, ConstParam(_EXCHANGE_DOC)],
     ) -> Annotated[pa.BooleanArray, Returns()]:
+        """Compute the result column for each input row."""
         return _is_early_close_column(date, exchange=exchange)
 
 

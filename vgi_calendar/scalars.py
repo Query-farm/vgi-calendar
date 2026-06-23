@@ -49,6 +49,8 @@ class EasterFunction(ScalarFunction):
     """Western (Gregorian) Easter Sunday for a given year."""
 
     class Meta:
+        """Function metadata."""
+
         name = "easter"
         description = "Western (Gregorian) Easter Sunday for a year"
         categories = ["calendar"]
@@ -70,6 +72,8 @@ class IsoWeekFunction(ScalarFunction):
     """ISO-8601 week number (1..53) for a date."""
 
     class Meta:
+        """Function metadata."""
+
         name = "iso_week"
         description = "ISO-8601 week number (1..53) for a date"
         categories = ["calendar"]
@@ -91,6 +95,8 @@ class IsoYearWeekFunction(ScalarFunction):
     """ISO-8601 year-week label such as ``'2026-W26'``."""
 
     class Meta:
+        """Function metadata."""
+
         name = "iso_year_week"
         description = "ISO-8601 year-week label, e.g. '2026-W26'"
         categories = ["calendar"]
@@ -125,6 +131,8 @@ class IsHolidayFunction(ScalarFunction):
     """``is_holiday(date)`` -- True if the date is a US public holiday."""
 
     class Meta:
+        """Function metadata."""
+
         name = "is_holiday"
         description = "True if a date is a public holiday (country defaults to 'US')"
         categories = ["calendar", "holidays"]
@@ -140,6 +148,7 @@ class IsHolidayFunction(ScalarFunction):
         cls,
         date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
     ) -> Annotated[pa.BooleanArray, Returns()]:
+        """Compute the result column for each input row."""
         return _is_holiday_column(date, country=_DEFAULT_COUNTRY, subdiv=None)
 
 
@@ -147,6 +156,8 @@ class IsHolidayCountryFunction(ScalarFunction):
     """``is_holiday(date, country)`` -- True if the date is a holiday in ``country``."""
 
     class Meta:
+        """Function metadata."""
+
         name = "is_holiday"
         description = "True if a date is a public holiday in a country"
         categories = ["calendar", "holidays"]
@@ -163,6 +174,7 @@ class IsHolidayCountryFunction(ScalarFunction):
         date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
         country: Annotated[str, ConstParam("ISO-3166 alpha-2 country code, e.g. 'US', 'GB'.")],
     ) -> Annotated[pa.BooleanArray, Returns()]:
+        """Compute the result column for each input row."""
         return _is_holiday_column(date, country=country, subdiv=None)
 
 
@@ -170,6 +182,8 @@ class IsHolidaySubdivFunction(ScalarFunction):
     """``is_holiday(date, country, subdiv)`` -- holiday in a country + subdivision."""
 
     class Meta:
+        """Function metadata."""
+
         name = "is_holiday"
         description = "True if a date is a public holiday in a country/subdivision"
         categories = ["calendar", "holidays"]
@@ -187,6 +201,7 @@ class IsHolidaySubdivFunction(ScalarFunction):
         country: Annotated[str, ConstParam("ISO-3166 alpha-2 country code, e.g. 'US', 'GB'.")],
         subdiv: Annotated[str, ConstParam("Subdivision / state code, e.g. 'CA', 'NY'.")],
     ) -> Annotated[pa.BooleanArray, Returns()]:
+        """Compute the result column for each input row."""
         return _is_holiday_column(date, country=country, subdiv=subdiv)
 
 
@@ -204,6 +219,8 @@ class HolidayNameFunction(ScalarFunction):
     """``holiday_name(date)`` -- the US holiday name on a date, or NULL."""
 
     class Meta:
+        """Function metadata."""
+
         name = "holiday_name"
         description = "Public-holiday name on a date, or NULL (country defaults to 'US')"
         categories = ["calendar", "holidays"]
@@ -219,6 +236,7 @@ class HolidayNameFunction(ScalarFunction):
         cls,
         date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
     ) -> Annotated[pa.StringArray, Returns()]:
+        """Compute the result column for each input row."""
         return _holiday_name_column(date, country=_DEFAULT_COUNTRY, subdiv=None)
 
 
@@ -226,6 +244,8 @@ class HolidayNameCountryFunction(ScalarFunction):
     """``holiday_name(date, country)`` -- holiday name in ``country``, or NULL."""
 
     class Meta:
+        """Function metadata."""
+
         name = "holiday_name"
         description = "Public-holiday name on a date in a country, or NULL"
         categories = ["calendar", "holidays"]
@@ -242,6 +262,7 @@ class HolidayNameCountryFunction(ScalarFunction):
         date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
         country: Annotated[str, ConstParam("ISO-3166 alpha-2 country code, e.g. 'US', 'GB'.")],
     ) -> Annotated[pa.StringArray, Returns()]:
+        """Compute the result column for each input row."""
         return _holiday_name_column(date, country=country, subdiv=None)
 
 
@@ -249,6 +270,8 @@ class HolidayNameSubdivFunction(ScalarFunction):
     """``holiday_name(date, country, subdiv)`` -- name in a country + subdivision."""
 
     class Meta:
+        """Function metadata."""
+
         name = "holiday_name"
         description = "Public-holiday name on a date in a country/subdivision, or NULL"
         categories = ["calendar", "holidays"]
@@ -266,6 +289,7 @@ class HolidayNameSubdivFunction(ScalarFunction):
         country: Annotated[str, ConstParam("ISO-3166 alpha-2 country code, e.g. 'US', 'GB'.")],
         subdiv: Annotated[str, ConstParam("Subdivision / state code, e.g. 'CA', 'NY'.")],
     ) -> Annotated[pa.StringArray, Returns()]:
+        """Compute the result column for each input row."""
         return _holiday_name_column(date, country=country, subdiv=subdiv)
 
 
@@ -283,6 +307,8 @@ class IsBusinessDayFunction(ScalarFunction):
     """``is_business_day(date)`` -- weekday and not a US holiday."""
 
     class Meta:
+        """Function metadata."""
+
         name = "is_business_day"
         description = "True if a date is a weekday and not a public holiday (country defaults to 'US')"
         categories = ["calendar", "business-days"]
@@ -298,6 +324,7 @@ class IsBusinessDayFunction(ScalarFunction):
         cls,
         date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
     ) -> Annotated[pa.BooleanArray, Returns()]:
+        """Compute the result column for each input row."""
         return _is_business_day_column(date, country=_DEFAULT_COUNTRY, subdiv=None)
 
 
@@ -305,6 +332,8 @@ class IsBusinessDayCountryFunction(ScalarFunction):
     """``is_business_day(date, country)`` -- weekday and not a holiday in ``country``."""
 
     class Meta:
+        """Function metadata."""
+
         name = "is_business_day"
         description = "True if a date is a weekday and not a public holiday in a country"
         categories = ["calendar", "business-days"]
@@ -321,6 +350,7 @@ class IsBusinessDayCountryFunction(ScalarFunction):
         date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
         country: Annotated[str, ConstParam("ISO-3166 alpha-2 country code, e.g. 'US', 'GB'.")],
     ) -> Annotated[pa.BooleanArray, Returns()]:
+        """Compute the result column for each input row."""
         return _is_business_day_column(date, country=country, subdiv=None)
 
 
@@ -328,6 +358,8 @@ class IsBusinessDaySubdivFunction(ScalarFunction):
     """``is_business_day(date, country, subdiv)`` -- in a country + subdivision."""
 
     class Meta:
+        """Function metadata."""
+
         name = "is_business_day"
         description = "True if a date is a weekday and not a public holiday in a country/subdivision"
         categories = ["calendar", "business-days"]
@@ -345,6 +377,7 @@ class IsBusinessDaySubdivFunction(ScalarFunction):
         country: Annotated[str, ConstParam("ISO-3166 alpha-2 country code, e.g. 'US', 'GB'.")],
         subdiv: Annotated[str, ConstParam("Subdivision / state code, e.g. 'CA', 'NY'.")],
     ) -> Annotated[pa.BooleanArray, Returns()]:
+        """Compute the result column for each input row."""
         return _is_business_day_column(date, country=country, subdiv=subdiv)
 
 
@@ -367,6 +400,8 @@ class AddBusinessDaysFunction(ScalarFunction):
     """``add_business_days(date, n)`` -- advance by N US business days."""
 
     class Meta:
+        """Function metadata."""
+
         name = "add_business_days"
         description = "Advance a date by N business days, skipping weekends + holidays (country 'US')"
         categories = ["calendar", "business-days"]
@@ -383,6 +418,7 @@ class AddBusinessDaysFunction(ScalarFunction):
         date: Annotated[pa.Date32Array, Param(doc="Starting date.")],
         n: Annotated[pa.Int32Array, Param(doc="Business days to add (negative goes backwards).")],
     ) -> Annotated[pa.Date32Array, Returns()]:
+        """Compute the result column for each input row."""
         return _add_business_days_column(date, n, country=_DEFAULT_COUNTRY, subdiv=None)
 
 
@@ -390,6 +426,8 @@ class AddBusinessDaysCountryFunction(ScalarFunction):
     """``add_business_days(date, n, country)`` -- advance by N business days in ``country``."""
 
     class Meta:
+        """Function metadata."""
+
         name = "add_business_days"
         description = "Advance a date by N business days in a country, skipping weekends + holidays"
         categories = ["calendar", "business-days"]
@@ -407,6 +445,7 @@ class AddBusinessDaysCountryFunction(ScalarFunction):
         n: Annotated[pa.Int32Array, Param(doc="Business days to add (negative goes backwards).")],
         country: Annotated[str, ConstParam("ISO-3166 alpha-2 country code, e.g. 'US', 'GB'.")],
     ) -> Annotated[pa.Date32Array, Returns()]:
+        """Compute the result column for each input row."""
         return _add_business_days_column(date, n, country=country, subdiv=None)
 
 
@@ -429,6 +468,8 @@ class BusinessDaysBetweenFunction(ScalarFunction):
     """``business_days_between(start, end)`` -- count business days in ``[start, end)``."""
 
     class Meta:
+        """Function metadata."""
+
         name = "business_days_between"
         description = "Count business days in [start, end) (start inclusive; country defaults to 'US')"
         categories = ["calendar", "business-days"]
@@ -445,6 +486,7 @@ class BusinessDaysBetweenFunction(ScalarFunction):
         start: Annotated[pa.Date32Array, Param(doc="Start date (inclusive).")],
         end: Annotated[pa.Date32Array, Param(doc="End date (exclusive).")],
     ) -> Annotated[pa.Int32Array, Returns()]:
+        """Compute the result column for each input row."""
         return _business_days_between_column(start, end, country=_DEFAULT_COUNTRY, subdiv=None)
 
 
@@ -452,6 +494,8 @@ class BusinessDaysBetweenCountryFunction(ScalarFunction):
     """``business_days_between(start, end, country)`` -- count in ``country``."""
 
     class Meta:
+        """Function metadata."""
+
         name = "business_days_between"
         description = "Count business days in [start, end) for a country (start inclusive)"
         categories = ["calendar", "business-days"]
@@ -469,6 +513,7 @@ class BusinessDaysBetweenCountryFunction(ScalarFunction):
         end: Annotated[pa.Date32Array, Param(doc="End date (exclusive).")],
         country: Annotated[str, ConstParam("ISO-3166 alpha-2 country code, e.g. 'US', 'GB'.")],
     ) -> Annotated[pa.Int32Array, Returns()]:
+        """Compute the result column for each input row."""
         return _business_days_between_column(start, end, country=country, subdiv=None)
 
 

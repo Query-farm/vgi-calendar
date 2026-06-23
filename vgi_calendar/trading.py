@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import functools
+from typing import cast
 
 import exchange_calendars as _xcals
 import pandas as _pd
@@ -61,7 +62,8 @@ def _to_utc_dt(ts: _pd.Timestamp) -> _dt.datetime:
     """A timezone-aware UTC :class:`datetime` for a (UTC) pandas ``Timestamp``."""
     if ts.tzinfo is None:
         ts = ts.tz_localize("UTC")
-    return ts.tz_convert("UTC").to_pydatetime()
+    # pandas is untyped, so to_pydatetime() is inferred as Any under --strict.
+    return cast("_dt.datetime", ts.tz_convert("UTC").to_pydatetime())
 
 
 def list_exchanges() -> list[str]:
@@ -107,10 +109,7 @@ def add_trading_days(date: _dt.date, n: int, exchange: str = DEFAULT_EXCHANGE) -
         return date
     sess = _sessions(exchange)
     ts = _ts(date)
-    if n > 0:
-        j = int(sess.searchsorted(ts, side="right")) + n - 1
-    else:
-        j = int(sess.searchsorted(ts, side="left")) + n
+    j = int(sess.searchsorted(ts, side="right")) + n - 1 if n > 0 else int(sess.searchsorted(ts, side="left")) + n
     return sess[j].date() if 0 <= j < len(sess) else None
 
 
@@ -150,9 +149,7 @@ def is_early_close(date: _dt.date, exchange: str = DEFAULT_EXCHANGE) -> bool:
     return _ts(date) in _calendar(exchange).early_closes
 
 
-def trading_sessions_in_range(
-    start: _dt.date, end: _dt.date, exchange: str = DEFAULT_EXCHANGE
-) -> list[_dt.date]:
+def trading_sessions_in_range(start: _dt.date, end: _dt.date, exchange: str = DEFAULT_EXCHANGE) -> list[_dt.date]:
     """Every trading session in the inclusive range ``[start, end]``, ascending."""
     if end < start:
         return []

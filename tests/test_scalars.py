@@ -31,9 +31,7 @@ def client() -> Iterator[Client]:
         yield c
 
 
-def _scalar(
-    client: Client, name: str, batch: pa.RecordBatch, *, positional: list[pa.Scalar] | None = None
-) -> list:
+def _scalar(client: Client, name: str, batch: pa.RecordBatch, *, positional: list[pa.Scalar] | None = None) -> list:
     results = list(
         client.scalar_function(
             function_name=name,

@@ -54,9 +54,7 @@ class _TradingSessionsArgs:
     exchange: Annotated[str, _EXCHANGE]
 
 
-_TRADING_SESSIONS_SCHEMA = pa.schema(
-    [field("date", pa.date32(), "A trading session in the range.", nullable=False)]
-)
+_TRADING_SESSIONS_SCHEMA = pa.schema([field("date", pa.date32(), "A trading session in the range.", nullable=False)])
 
 
 @init_single_worker
@@ -67,6 +65,8 @@ class TradingSessionsFunction(TableFunctionGenerator[_TradingSessionsArgs]):
     FIXED_SCHEMA: ClassVar[pa.Schema] = _TRADING_SESSIONS_SCHEMA
 
     class Meta:
+        """Function metadata."""
+
         name = "trading_sessions"
         description = "Every trading session in an inclusive [start, end] range"
         categories = ["calendar", "trading"]
@@ -76,20 +76,19 @@ class TradingSessionsFunction(TableFunctionGenerator[_TradingSessionsArgs]):
                 description="NYSE sessions in January 2026",
             ),
             FunctionExample(
-                sql=(
-                    "SELECT * FROM cal.trading_sessions(DATE '2026-01-01', DATE '2026-01-31', "
-                    "exchange := 'XLON')"
-                ),
+                sql=("SELECT * FROM cal.trading_sessions(DATE '2026-01-01', DATE '2026-01-31', exchange := 'XLON')"),
                 description="London sessions in January 2026",
             ),
         ]
 
     @classmethod
     def cardinality(cls, params: BindParams[_TradingSessionsArgs]) -> TableCardinality:
+        """Estimate the output row count for the query planner."""
         return TableCardinality(estimate=None, max=None)
 
     @classmethod
     def process(cls, params: ProcessParams[_TradingSessionsArgs], state: None, out: OutputCollector) -> None:
+        """Emit the function's output rows into the collector."""
         a = params.args
         days = trading.trading_sessions_in_range(a.start, a.end, a.exchange)
         out.emit(pa.RecordBatch.from_pydict({"date": days}, schema=params.output_schema))
@@ -129,6 +128,8 @@ class TradingScheduleFunction(TableFunctionGenerator[_TradingScheduleArgs]):
     FIXED_SCHEMA: ClassVar[pa.Schema] = _TRADING_SCHEDULE_SCHEMA
 
     class Meta:
+        """Function metadata."""
+
         name = "trading_schedule"
         description = "Per-session open/close/early-close schedule for a date range"
         categories = ["calendar", "trading"]
@@ -141,10 +142,12 @@ class TradingScheduleFunction(TableFunctionGenerator[_TradingScheduleArgs]):
 
     @classmethod
     def cardinality(cls, params: BindParams[_TradingScheduleArgs]) -> TableCardinality:
+        """Estimate the output row count for the query planner."""
         return TableCardinality(estimate=None, max=None)
 
     @classmethod
     def process(cls, params: ProcessParams[_TradingScheduleArgs], state: None, out: OutputCollector) -> None:
+        """Emit the function's output rows into the collector."""
         a = params.args
         rows = trading.trading_schedule(a.start, a.end, a.exchange)
         out.emit(
@@ -171,9 +174,7 @@ class _NoArgs:
     """``exchanges()`` takes no arguments."""
 
 
-_EXCHANGES_SCHEMA = pa.schema(
-    [field("code", pa.string(), "Exchange MIC code (e.g. 'XNYS').", nullable=False)]
-)
+_EXCHANGES_SCHEMA = pa.schema([field("code", pa.string(), "Exchange MIC code (e.g. 'XNYS').", nullable=False)])
 
 
 @init_single_worker
@@ -184,6 +185,8 @@ class ExchangesFunction(TableFunctionGenerator[_NoArgs]):
     FIXED_SCHEMA: ClassVar[pa.Schema] = _EXCHANGES_SCHEMA
 
     class Meta:
+        """Function metadata."""
+
         name = "exchanges"
         description = "List every supported exchange calendar MIC code"
         categories = ["calendar", "trading"]
@@ -196,10 +199,12 @@ class ExchangesFunction(TableFunctionGenerator[_NoArgs]):
 
     @classmethod
     def cardinality(cls, params: BindParams[_NoArgs]) -> TableCardinality:
+        """Estimate the output row count for the query planner."""
         return TableCardinality(estimate=120, max=1000)
 
     @classmethod
     def process(cls, params: ProcessParams[_NoArgs], state: None, out: OutputCollector) -> None:
+        """Emit the function's output rows into the collector."""
         out.emit(pa.RecordBatch.from_pydict({"code": trading.list_exchanges()}, schema=params.output_schema))
         out.finish()
 
