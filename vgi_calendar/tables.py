@@ -32,7 +32,23 @@ from vgi.table_function import (
 from vgi_rpc.rpc import OutputCollector
 
 from . import core
+from .meta import object_tags
 from .schema_utils import field
+
+_SRC = "tables.py"
+
+# VGI509 -- guaranteed-runnable, catalog-qualified examples. Each `sql` is
+# self-contained and re-runnable against an attached `cal` worker. We omit
+# `expected_result` deliberately: the linter only needs each query to execute.
+_HOLIDAYS_EXECUTABLE_EXAMPLES = (
+    '[{"description": "Every US public holiday in 2026.", '
+    '"sql": "SELECT * FROM cal.main.holidays(2026, country := \'US\') ORDER BY date"}, '
+    '{"description": "US + California holidays in 2026.", '
+    "\"sql\": \"SELECT date, name FROM cal.main.holidays(2026, country := 'US', subdiv := 'CA') "
+    'ORDER BY date"}, '
+    '{"description": "Count the US public holidays in 2026.", '
+    '"sql": "SELECT count(*) AS n FROM cal.main.holidays(2026, country := \'US\')"}]'
+)
 
 # Common named-argument descriptors. ``subdiv`` defaults to NULL; ``country``
 # to 'US'. Both are optional and named (string position).
@@ -81,6 +97,25 @@ class HolidaysFunction(TableFunctionGenerator[_HolidaysArgs]):
         description = "All public holidays in a year (date, name, observed)"
         categories = ["calendar", "holidays"]
         tags = {
+            **object_tags(
+                "Holidays In A Year",
+                "List **every public holiday in a calendar year** as `(date, name, observed)` rows. "
+                "Takes the year as a positional argument and optional named `country` (default "
+                "`'US'`) and `subdiv` (state/province) arguments. The `observed` column is `true` "
+                "when the row is an *observed-day shift* -- e.g. a holiday that falls on a weekend "
+                "and is observed on the adjacent weekday. Coverage spans hundreds of countries via "
+                "the `holidays` library; call `cal.supported_countries()` to discover valid "
+                "`country`/`subdiv` codes. Use it to build a holiday lookup table, join against "
+                "transactions, or audit a jurisdiction's calendar.",
+                "## holidays(year, country := ..., subdiv := ...)\n\n"
+                "All **public holidays in a year** as `(date, name, observed)` rows.\n\n"
+                "`country` defaults to `'US'`; add `subdiv` for regional holidays. `observed` flags "
+                "weekend-shift observances. See `cal.supported_countries()` for valid codes.",
+                "holidays, list holidays, holiday calendar, public holidays, bank holidays, "
+                "observed, holiday table, year holidays",
+                _SRC,
+            ),
+            "vgi.executable_examples": _HOLIDAYS_EXECUTABLE_EXAMPLES,
             "vgi.columns_md": (
                 "| column | type | description |\n"
                 "| --- | --- | --- |\n"
@@ -91,11 +126,11 @@ class HolidaysFunction(TableFunctionGenerator[_HolidaysArgs]):
         }
         examples = [
             FunctionExample(
-                sql="SELECT * FROM cal.holidays(2026, country := 'US')",
+                sql="SELECT * FROM cal.main.holidays(2026, country := 'US')",
                 description="Every US public holiday in 2026",
             ),
             FunctionExample(
-                sql="SELECT * FROM cal.holidays(2026, country := 'US', subdiv := 'CA')",
+                sql="SELECT * FROM cal.main.holidays(2026, country := 'US', subdiv := 'CA')",
                 description="US + California holidays in 2026",
             ),
         ]
@@ -150,6 +185,23 @@ class BusinessDaysFunction(TableFunctionGenerator[_BusinessDaysArgs]):
         description = "Every business day in an inclusive [start, end] range"
         categories = ["calendar", "business-days"]
         tags = {
+            **object_tags(
+                "Business Days In Range",
+                "Enumerate **every business (working) day in an inclusive `[start, end]` date "
+                "range**, one per row -- weekdays that are not public holidays. Takes `start` and "
+                "`end` positionally plus optional named `country` (default `'US'`) and `subdiv`. "
+                "Both bounds are inclusive. Use it to expand a range into a working-day series you "
+                "can join against, count, or window over (e.g. allocate workload across business "
+                "days). For other jurisdictions pass `country`/`subdiv`; see "
+                "`cal.supported_countries()` for valid codes.",
+                "## business_days(start, end, country := ..., subdiv := ...)\n\n"
+                "Every **business day in the inclusive `[start, end]` range**, one per row.\n\n"
+                "Weekdays minus holidays; both bounds inclusive. `country` defaults to `'US'`. "
+                "Expand a range into a working-day series for joins/counts.",
+                "business days, working days, list business days, workday series, banking days, "
+                "weekdays excluding holidays, date range",
+                _SRC,
+            ),
             "vgi.columns_md": (
                 "| column | type | description |\n"
                 "| --- | --- | --- |\n"
@@ -158,7 +210,7 @@ class BusinessDaysFunction(TableFunctionGenerator[_BusinessDaysArgs]):
         }
         examples = [
             FunctionExample(
-                sql="SELECT * FROM cal.business_days(DATE '2026-12-21', DATE '2026-12-31', country := 'US')",
+                sql="SELECT * FROM cal.main.business_days(DATE '2026-12-21', DATE '2026-12-31', country := 'US')",
                 description="Business days over the 2026 year-end week",
             ),
         ]
@@ -212,6 +264,25 @@ class RruleFunction(TableFunctionGenerator[_RruleArgs]):
         description = "Expand an RFC-5545 recurrence rule (dateutil) into timestamps"
         categories = ["calendar", "recurrence"]
         tags = {
+            **object_tags(
+                "Expand Recurrence Rule",
+                "Expand an **RFC-5545 (iCalendar) recurrence rule** into concrete timestamps as "
+                "`(seq, occurrence)` rows. Takes a `dtstart` timestamp and an RRULE string "
+                "(e.g. `'FREQ=WEEKLY;COUNT=4'` or a full `'RRULE:...'`) positionally, plus optional "
+                "named `count` and `until` bounds. Because an RRULE can be infinite, you **must** "
+                "bound it -- either inside the rule (`COUNT=`/`UNTIL=`) or via the `count`/`until` "
+                "arguments -- or it will not terminate. `seq` is the 0-based occurrence index. "
+                "Parsing is via `dateutil.rrule`. Use it to materialize schedules: meetings, "
+                "billing cycles, reminders, cron-like calendar events.",
+                "## rrule(dtstart, rule, count := ..., until := ...)\n\n"
+                "Expand an **RFC-5545 RRULE** into `(seq, occurrence)` timestamp rows.\n\n"
+                "Always bound the rule (`COUNT`/`UNTIL` in the string, or the `count`/`until` "
+                "args) -- recurrences can be infinite. `seq` is the 0-based index. Backed by "
+                "`dateutil.rrule`.",
+                "rrule, recurrence, rfc-5545, icalendar, recurring event, schedule expansion, "
+                "freq weekly monthly, repeat, ical",
+                _SRC,
+            ),
             "vgi.columns_md": (
                 "| column | type | description |\n"
                 "| --- | --- | --- |\n"
@@ -221,12 +292,12 @@ class RruleFunction(TableFunctionGenerator[_RruleArgs]):
         }
         examples = [
             FunctionExample(
-                sql="SELECT * FROM cal.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4')",
+                sql="SELECT * FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4')",
                 description="The first four weekly occurrences from 2026-01-01",
             ),
             FunctionExample(
                 sql=(
-                    "SELECT * FROM cal.rrule(TIMESTAMP '2026-01-01', 'FREQ=MONTHLY;BYMONTHDAY=1', "
+                    "SELECT * FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=MONTHLY;BYMONTHDAY=1', "
                     "until := TIMESTAMP '2026-12-31')"
                 ),
                 description="The first of every month in 2026",
@@ -288,6 +359,23 @@ class SupportedCountriesFunction(TableFunctionGenerator[_NoArgs]):
         description = "Every (country, subdivision) the holiday functions support"
         categories = ["calendar", "holidays"]
         tags = {
+            **object_tags(
+                "Supported Countries Catalog",
+                "List every **`(country, subdivision)` pair the holiday/business-day functions "
+                "support**, so you can discover which codes to pass as `country` / `subdiv` to "
+                "`is_holiday`, `holiday_name`, `is_business_day`, `holidays`, and friends. "
+                "`country` is an ISO-3166 alpha-2 code; `subdivision` is a state/province code or "
+                "`NULL` for a country-level entry. Coverage is broad (hundreds of countries plus "
+                "subdivisions); `'US'` is merely the default, not a limit. This is a discovery "
+                "table -- query, filter, or `count` it to explore the supported jurisdictions.",
+                "## supported_countries()\n\n"
+                "Every **`(country, subdivision)`** the holiday functions support.\n\n"
+                "`country` is ISO-3166 alpha-2; `subdivision` is a state/province code or `NULL`. "
+                "Use it to find valid `country`/`subdiv` arguments -- `'US'` is just the default.",
+                "supported countries, list countries, available countries, subdivisions, "
+                "iso-3166, discovery, what countries, jurisdictions",
+                _SRC,
+            ),
             "vgi.columns_md": (
                 "| column | type | description |\n"
                 "| --- | --- | --- |\n"
@@ -297,11 +385,11 @@ class SupportedCountriesFunction(TableFunctionGenerator[_NoArgs]):
         }
         examples = [
             FunctionExample(
-                sql="SELECT count(DISTINCT country) FROM cal.supported_countries()",
+                sql="SELECT count(DISTINCT country) FROM cal.main.supported_countries()",
                 description="How many countries are supported",
             ),
             FunctionExample(
-                sql="SELECT subdivision FROM cal.supported_countries() WHERE country = 'DE'",
+                sql="SELECT subdivision FROM cal.main.supported_countries() WHERE country = 'DE'",
                 description="German subdivisions (Bundesländer)",
             ),
         ]

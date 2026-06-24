@@ -84,11 +84,36 @@ _SCHEMA_DESCRIPTION_MD = (
     "Holiday, business-day, recurrence, and stock-exchange trading-calendar functions over Apache Arrow."
 )
 
+# VGI506 — representative, catalog-qualified example queries for the schema.
+# Every reference is fully qualified (`cal.main.<fn>`) so each line executes as
+# written against the attached worker.
+_SCHEMA_EXAMPLE_QUERIES = (
+    "SELECT cal.main.is_holiday(DATE '2026-12-25');\n"
+    "SELECT cal.main.holiday_name(DATE '2026-07-04');\n"
+    "SELECT cal.main.is_business_day(DATE '2026-12-25');\n"
+    "SELECT cal.main.add_business_days(DATE '2026-12-24', 2);\n"
+    "SELECT cal.main.business_days_between(DATE '2026-01-01', DATE '2026-02-01');\n"
+    "SELECT cal.main.easter(2026);\n"
+    "SELECT cal.main.iso_year_week(DATE '2026-06-22');\n"
+    "SELECT * FROM cal.main.holidays(2026, country := 'US', subdiv := 'CA');\n"
+    "SELECT * FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4');\n"
+    "SELECT cal.main.is_trading_day(DATE '2026-01-01');\n"
+    "SELECT cal.main.market_close(DATE '2026-11-27');\n"
+    "SELECT * FROM cal.main.trading_schedule(DATE '2026-11-25', DATE '2026-11-30');"
+)
+
 _CALENDAR_CATALOG = Catalog(
     name="cal",
     default_schema="main",
     comment="Holiday, business-day, recurrence, and stock-exchange trading-calendar math for SQL",
     tags={
+        "vgi.title": "Calendar, Holiday & Trading-Day Math",
+        "vgi.keywords": (
+            "calendar, holiday, public holiday, business day, working day, banking day, "
+            "easter, iso week, year-week, recurrence, rrule, rfc-5545, trading day, "
+            "trading calendar, exchange calendar, market open, market close, nyse, lse, "
+            "date math, weekday, country, subdivision"
+        ),
         "vgi.description_llm": _CATALOG_DESCRIPTION_LLM,
         "vgi.description_md": _CATALOG_DESCRIPTION_MD,
         "vgi.author": "Query.Farm",
@@ -103,6 +128,17 @@ _CALENDAR_CATALOG = Catalog(
             name="main",
             comment="Holiday, business-day, and recurrence calendar math for SQL",
             tags={
+                "vgi.title": "Calendar — main",
+                "vgi.keywords": (
+                    "holiday, business day, trading day, easter, iso week, recurrence, rrule, "
+                    "market open, market close, exchange calendar, supported countries, exchanges"
+                ),
+                # VGI123 classifying tags use BARE keys (not vgi.-namespaced).
+                "domain": "date-and-time",
+                "category": "calendar",
+                "topic": "holidays-business-days-trading-calendars",
+                "vgi.source_url": ("https://github.com/Query-farm/vgi-calendar/blob/main/calendar_worker.py"),
+                "vgi.example_queries": _SCHEMA_EXAMPLE_QUERIES,
                 "vgi.description_llm": _SCHEMA_DESCRIPTION_LLM,
                 "vgi.description_md": _SCHEMA_DESCRIPTION_MD,
             },
