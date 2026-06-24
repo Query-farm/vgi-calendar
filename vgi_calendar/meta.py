@@ -5,8 +5,8 @@ table. Each function/table surfaces them in its ``Meta.tags``:
 
 - ``vgi.title`` (VGI124)          -- human-friendly display name. Must not
   normalize-equal the machine name, or VGI125 fires.
-- ``vgi.description_llm`` (VGI112) -- a Markdown narrative aimed at an LLM/agent.
-- ``vgi.description_md`` (VGI113)  -- a Markdown narrative aimed at human docs.
+- ``vgi.doc_llm`` (VGI112)         -- a Markdown narrative aimed at an LLM/agent.
+- ``vgi.doc_md`` (VGI113)          -- a Markdown narrative aimed at human docs.
 - ``vgi.keywords`` (VGI126)        -- comma-separated search terms / synonyms.
 - ``vgi.source_url`` (VGI128)      -- link to the implementing source file.
 
@@ -30,8 +30,8 @@ def source_url(relative_path: str) -> str:
 
 def object_tags(
     title: str,
-    description_llm: str,
-    description_md: str,
+    doc_llm: str,
+    doc_md: str,
     keywords: str,
     relative_path: str,
 ) -> dict[str, str]:
@@ -41,8 +41,8 @@ def object_tags(
     """
     return {
         "vgi.title": title,
-        "vgi.description_llm": description_llm,
-        "vgi.description_md": description_md,
+        "vgi.doc_llm": doc_llm,
+        "vgi.doc_md": doc_md,
         "vgi.keywords": keywords,
         "vgi.source_url": source_url(relative_path),
     }

@@ -114,8 +114,8 @@ _CALENDAR_CATALOG = Catalog(
             "trading calendar, exchange calendar, market open, market close, nyse, lse, "
             "date math, weekday, country, subdivision"
         ),
-        "vgi.description_llm": _CATALOG_DESCRIPTION_LLM,
-        "vgi.description_md": _CATALOG_DESCRIPTION_MD,
+        "vgi.doc_llm": _CATALOG_DESCRIPTION_LLM,
+        "vgi.doc_md": _CATALOG_DESCRIPTION_MD,
         "vgi.author": "Query.Farm",
         "vgi.copyright": "Copyright 2026 Query Farm LLC - https://query.farm",
         "vgi.license": "MIT",
@@ -139,8 +139,8 @@ _CALENDAR_CATALOG = Catalog(
                 "topic": "holidays-business-days-trading-calendars",
                 "vgi.source_url": ("https://github.com/Query-farm/vgi-calendar/blob/main/calendar_worker.py"),
                 "vgi.example_queries": _SCHEMA_EXAMPLE_QUERIES,
-                "vgi.description_llm": _SCHEMA_DESCRIPTION_LLM,
-                "vgi.description_md": _SCHEMA_DESCRIPTION_MD,
+                "vgi.doc_llm": _SCHEMA_DESCRIPTION_LLM,
+                "vgi.doc_md": _SCHEMA_DESCRIPTION_MD,
             },
             functions=list(_FUNCTIONS),
         ),

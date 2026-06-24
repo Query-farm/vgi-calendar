@@ -91,7 +91,7 @@ class TradingSessionsFunction(TableFunctionGenerator[_TradingSessionsArgs]):
                 "trading calendar, nyse sessions, date range",
                 _SRC,
             ),
-            "vgi.columns_md": (
+            "vgi.result_columns_md": (
                 "| column | type | description |\n"
                 "| --- | --- | --- |\n"
                 "| `date` | DATE | A trading session in the range. |\n"
@@ -182,7 +182,7 @@ class TradingScheduleFunction(TableFunctionGenerator[_TradingScheduleArgs]):
                 "half day, trading hours table, nyse schedule",
                 _SRC,
             ),
-            "vgi.columns_md": (
+            "vgi.result_columns_md": (
                 "| column | type | description |\n"
                 "| --- | --- | --- |\n"
                 "| `session` | DATE | Trading session date. |\n"
@@ -272,7 +272,7 @@ class ExchangesFunction(TableFunctionGenerator[_NoArgs]):
                 '{"description": "Confirm the NYSE (XNYS) calendar is available.", '
                 '"sql": "SELECT count(*) AS n FROM cal.main.exchanges() WHERE code = \'XNYS\'"}]'
             ),
-            "vgi.columns_md": (
+            "vgi.result_columns_md": (
                 "| column | type | description |\n"
                 "| --- | --- | --- |\n"
                 "| `code` | VARCHAR | Exchange MIC code (e.g. 'XNYS'). |\n"

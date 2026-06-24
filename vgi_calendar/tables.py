@@ -116,7 +116,7 @@ class HolidaysFunction(TableFunctionGenerator[_HolidaysArgs]):
                 _SRC,
             ),
             "vgi.executable_examples": _HOLIDAYS_EXECUTABLE_EXAMPLES,
-            "vgi.columns_md": (
+            "vgi.result_columns_md": (
                 "| column | type | description |\n"
                 "| --- | --- | --- |\n"
                 "| `date` | DATE | Holiday date. |\n"
@@ -202,7 +202,7 @@ class BusinessDaysFunction(TableFunctionGenerator[_BusinessDaysArgs]):
                 "weekdays excluding holidays, date range",
                 _SRC,
             ),
-            "vgi.columns_md": (
+            "vgi.result_columns_md": (
                 "| column | type | description |\n"
                 "| --- | --- | --- |\n"
                 "| `date` | DATE | A business day in the range. |\n"
@@ -283,7 +283,7 @@ class RruleFunction(TableFunctionGenerator[_RruleArgs]):
                 "freq weekly monthly, repeat, ical",
                 _SRC,
             ),
-            "vgi.columns_md": (
+            "vgi.result_columns_md": (
                 "| column | type | description |\n"
                 "| --- | --- | --- |\n"
                 "| `seq` | BIGINT | 0-based occurrence index. |\n"
@@ -376,7 +376,7 @@ class SupportedCountriesFunction(TableFunctionGenerator[_NoArgs]):
                 "iso-3166, discovery, what countries, jurisdictions",
                 _SRC,
             ),
-            "vgi.columns_md": (
+            "vgi.result_columns_md": (
                 "| column | type | description |\n"
                 "| --- | --- | --- |\n"
                 "| `country` | VARCHAR | ISO-3166 alpha-2 country code. |\n"
