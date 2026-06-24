@@ -70,6 +70,13 @@ class TradingSessionsFunction(TableFunctionGenerator[_TradingSessionsArgs]):
         name = "trading_sessions"
         description = "Every trading session in an inclusive [start, end] range"
         categories = ["calendar", "trading"]
+        tags = {
+            "vgi.columns_md": (
+                "| column | type | description |\n"
+                "| --- | --- | --- |\n"
+                "| `date` | DATE | A trading session in the range. |\n"
+            ),
+        }
         examples = [
             FunctionExample(
                 sql="SELECT * FROM cal.trading_sessions(DATE '2026-01-01', DATE '2026-01-31')",
@@ -133,6 +140,16 @@ class TradingScheduleFunction(TableFunctionGenerator[_TradingScheduleArgs]):
         name = "trading_schedule"
         description = "Per-session open/close/early-close schedule for a date range"
         categories = ["calendar", "trading"]
+        tags = {
+            "vgi.columns_md": (
+                "| column | type | description |\n"
+                "| --- | --- | --- |\n"
+                "| `session` | DATE | Trading session date. |\n"
+                "| `market_open` | TIMESTAMPTZ | UTC market-open instant. |\n"
+                "| `market_close` | TIMESTAMPTZ | UTC market-close instant. |\n"
+                "| `is_early_close` | BOOLEAN | True if the session closes early. |\n"
+            ),
+        }
         examples = [
             FunctionExample(
                 sql="SELECT * FROM cal.trading_schedule(DATE '2026-11-25', DATE '2026-11-30')",
@@ -190,6 +207,13 @@ class ExchangesFunction(TableFunctionGenerator[_NoArgs]):
         name = "exchanges"
         description = "List every supported exchange calendar MIC code"
         categories = ["calendar", "trading"]
+        tags = {
+            "vgi.columns_md": (
+                "| column | type | description |\n"
+                "| --- | --- | --- |\n"
+                "| `code` | VARCHAR | Exchange MIC code (e.g. 'XNYS'). |\n"
+            ),
+        }
         examples = [
             FunctionExample(
                 sql="SELECT * FROM cal.exchanges() ORDER BY code",

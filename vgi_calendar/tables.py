@@ -80,6 +80,15 @@ class HolidaysFunction(TableFunctionGenerator[_HolidaysArgs]):
         name = "holidays"
         description = "All public holidays in a year (date, name, observed)"
         categories = ["calendar", "holidays"]
+        tags = {
+            "vgi.columns_md": (
+                "| column | type | description |\n"
+                "| --- | --- | --- |\n"
+                "| `date` | DATE | Holiday date. |\n"
+                "| `name` | VARCHAR | Holiday name. |\n"
+                "| `observed` | BOOLEAN | True if this row is an observed-day shift. |\n"
+            ),
+        }
         examples = [
             FunctionExample(
                 sql="SELECT * FROM cal.holidays(2026, country := 'US')",
@@ -140,6 +149,13 @@ class BusinessDaysFunction(TableFunctionGenerator[_BusinessDaysArgs]):
         name = "business_days"
         description = "Every business day in an inclusive [start, end] range"
         categories = ["calendar", "business-days"]
+        tags = {
+            "vgi.columns_md": (
+                "| column | type | description |\n"
+                "| --- | --- | --- |\n"
+                "| `date` | DATE | A business day in the range. |\n"
+            ),
+        }
         examples = [
             FunctionExample(
                 sql="SELECT * FROM cal.business_days(DATE '2026-12-21', DATE '2026-12-31', country := 'US')",
@@ -195,6 +211,14 @@ class RruleFunction(TableFunctionGenerator[_RruleArgs]):
         name = "rrule"
         description = "Expand an RFC-5545 recurrence rule (dateutil) into timestamps"
         categories = ["calendar", "recurrence"]
+        tags = {
+            "vgi.columns_md": (
+                "| column | type | description |\n"
+                "| --- | --- | --- |\n"
+                "| `seq` | BIGINT | 0-based occurrence index. |\n"
+                "| `occurrence` | TIMESTAMP | Occurrence timestamp. |\n"
+            ),
+        }
         examples = [
             FunctionExample(
                 sql="SELECT * FROM cal.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4')",
@@ -263,6 +287,14 @@ class SupportedCountriesFunction(TableFunctionGenerator[_NoArgs]):
         name = "supported_countries"
         description = "Every (country, subdivision) the holiday functions support"
         categories = ["calendar", "holidays"]
+        tags = {
+            "vgi.columns_md": (
+                "| column | type | description |\n"
+                "| --- | --- | --- |\n"
+                "| `country` | VARCHAR | ISO-3166 alpha-2 country code. |\n"
+                "| `subdivision` | VARCHAR | Subdivision / state code, or NULL. |\n"
+            ),
+        }
         examples = [
             FunctionExample(
                 sql="SELECT count(DISTINCT country) FROM cal.supported_countries()",
