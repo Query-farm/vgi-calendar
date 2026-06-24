@@ -55,8 +55,13 @@ cleanup() {
     kill "$SERVER_PID" 2>/dev/null || true
     wait "$SERVER_PID" 2>/dev/null || true
   fi
-  [[ -n "$SOCK" ]] && rm -f "$SOCK"
-  [[ -n "$PORT_FILE" ]] && rm -f "$PORT_FILE"
+  if [[ -n "$SOCK" ]]; then rm -f "$SOCK"; fi
+  if [[ -n "$PORT_FILE" ]]; then rm -f "$PORT_FILE"; fi
+  # Always succeed: an EXIT trap whose last command returns non-zero (e.g. a
+  # short-circuited `[[ -n "" ]] && …` when nothing needs cleaning) would
+  # otherwise become the script's exit status under `set -e` and fail an
+  # already-passing run.
+  return 0
 }
 trap cleanup EXIT
 
