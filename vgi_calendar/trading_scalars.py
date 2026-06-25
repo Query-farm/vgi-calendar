@@ -86,7 +86,7 @@ class IsTradingDayFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day to evaluate.")],
     ) -> Annotated[pa.BooleanArray, Returns()]:
         """Compute the result column for each input row."""
         return _is_trading_day_column(date, exchange=_DEFAULT)
@@ -126,7 +126,7 @@ class IsTradingDayExchangeFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day to evaluate.")],
         exchange: Annotated[str, ConstParam(_EXCHANGE_DOC)],
     ) -> Annotated[pa.BooleanArray, Returns()]:
         """Compute the result column for each input row."""
@@ -177,7 +177,7 @@ class NextTradingDayFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Reference date.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day to search relative to.")],
     ) -> Annotated[pa.Date32Array, Returns()]:
         """Compute the result column for each input row."""
         return _next_trading_day_column(date, exchange=_DEFAULT)
@@ -215,7 +215,7 @@ class NextTradingDayExchangeFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Reference date.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day to search relative to.")],
         exchange: Annotated[str, ConstParam(_EXCHANGE_DOC)],
     ) -> Annotated[pa.Date32Array, Returns()]:
         """Compute the result column for each input row."""
@@ -268,7 +268,7 @@ class PreviousTradingDayFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Reference date.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day to search relative to.")],
     ) -> Annotated[pa.Date32Array, Returns()]:
         """Compute the result column for each input row."""
         return _previous_trading_day_column(date, exchange=_DEFAULT)
@@ -307,7 +307,7 @@ class PreviousTradingDayExchangeFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Reference date.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day to search relative to.")],
         exchange: Annotated[str, ConstParam(_EXCHANGE_DOC)],
     ) -> Annotated[pa.Date32Array, Returns()]:
         """Compute the result column for each input row."""
@@ -362,7 +362,7 @@ class AddTradingDaysFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Starting date.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day to advance from.")],
         n: Annotated[pa.Int32Array, Param(doc="Sessions to add (negative goes backwards).")],
     ) -> Annotated[pa.Date32Array, Returns()]:
         """Compute the result column for each input row."""
@@ -402,7 +402,7 @@ class AddTradingDaysExchangeFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Starting date.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day to advance from.")],
         n: Annotated[pa.Int32Array, Param(doc="Sessions to add (negative goes backwards).")],
         exchange: Annotated[str, ConstParam(_EXCHANGE_DOC)],
     ) -> Annotated[pa.Date32Array, Returns()]:
@@ -458,8 +458,8 @@ class TradingDaysBetweenFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        start: Annotated[pa.Date32Array, Param(doc="Start date (inclusive).")],
-        end: Annotated[pa.Date32Array, Param(doc="End date (exclusive).")],
+        start: Annotated[pa.Date32Array, Param(doc="Inclusive lower bound of the span to count over.")],
+        end: Annotated[pa.Date32Array, Param(doc="Exclusive upper bound of the span to count over.")],
     ) -> Annotated[pa.Int32Array, Returns()]:
         """Compute the result column for each input row."""
         return _trading_days_between_column(start, end, exchange=_DEFAULT)
@@ -499,8 +499,8 @@ class TradingDaysBetweenExchangeFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        start: Annotated[pa.Date32Array, Param(doc="Start date (inclusive).")],
-        end: Annotated[pa.Date32Array, Param(doc="End date (exclusive).")],
+        start: Annotated[pa.Date32Array, Param(doc="Inclusive lower bound of the span to count over.")],
+        end: Annotated[pa.Date32Array, Param(doc="Exclusive upper bound of the span to count over.")],
         exchange: Annotated[str, ConstParam(_EXCHANGE_DOC)],
     ) -> Annotated[pa.Int32Array, Returns()]:
         """Compute the result column for each input row."""
@@ -556,7 +556,7 @@ class MarketOpenFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Session date.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day of the trading session.")],
     ) -> Annotated[pa.TimestampArray, Returns(arrow_type=_TZ_TS)]:
         """Compute the result column for each input row."""
         return _market_open_column(date, exchange=_DEFAULT)
@@ -595,7 +595,7 @@ class MarketOpenExchangeFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Session date.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day of the trading session.")],
         exchange: Annotated[str, ConstParam(_EXCHANGE_DOC)],
     ) -> Annotated[pa.TimestampArray, Returns(arrow_type=_TZ_TS)]:
         """Compute the result column for each input row."""
@@ -638,7 +638,7 @@ class MarketCloseFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Session date.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day of the trading session.")],
     ) -> Annotated[pa.TimestampArray, Returns(arrow_type=_TZ_TS)]:
         """Compute the result column for each input row."""
         return _market_close_column(date, exchange=_DEFAULT)
@@ -680,7 +680,7 @@ class MarketCloseExchangeFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Session date.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day of the trading session.")],
         exchange: Annotated[str, ConstParam(_EXCHANGE_DOC)],
     ) -> Annotated[pa.TimestampArray, Returns(arrow_type=_TZ_TS)]:
         """Compute the result column for each input row."""
@@ -732,7 +732,7 @@ class IsEarlyCloseFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day to evaluate.")],
     ) -> Annotated[pa.BooleanArray, Returns()]:
         """Compute the result column for each input row."""
         return _is_early_close_column(date, exchange=_DEFAULT)
@@ -772,7 +772,7 @@ class IsEarlyCloseExchangeFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day to evaluate.")],
         exchange: Annotated[str, ConstParam(_EXCHANGE_DOC)],
     ) -> Annotated[pa.BooleanArray, Returns()]:
         """Compute the result column for each input row."""

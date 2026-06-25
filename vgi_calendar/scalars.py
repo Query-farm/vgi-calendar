@@ -121,7 +121,7 @@ class IsoWeekFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Date to inspect")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day whose ISO week to report.")],
     ) -> Annotated[pa.Int32Array, Returns()]:
         """Map each date to its ISO week number."""
         out = [None if d is None else core.iso_week(d) for d in date.to_pylist()]
@@ -163,7 +163,7 @@ class IsoYearWeekFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Date to inspect")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day whose ISO week to report.")],
     ) -> Annotated[pa.StringArray, Returns()]:
         """Map each date to its ISO year-week string."""
         out = [None if d is None else core.iso_year_week(d) for d in date.to_pylist()]
@@ -217,7 +217,7 @@ class IsHolidayFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day to evaluate.")],
     ) -> Annotated[pa.BooleanArray, Returns()]:
         """Compute the result column for each input row."""
         return _is_holiday_column(date, country=_DEFAULT_COUNTRY, subdiv=None)
@@ -257,7 +257,7 @@ class IsHolidayCountryFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day to evaluate.")],
         country: Annotated[str, ConstParam("ISO-3166 alpha-2 country code, e.g. 'US', 'GB'.")],
     ) -> Annotated[pa.BooleanArray, Returns()]:
         """Compute the result column for each input row."""
@@ -300,7 +300,7 @@ class IsHolidaySubdivFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day to evaluate.")],
         country: Annotated[str, ConstParam("ISO-3166 alpha-2 country code, e.g. 'US', 'GB'.")],
         subdiv: Annotated[str, ConstParam("Subdivision / state code, e.g. 'CA', 'NY'.")],
     ) -> Annotated[pa.BooleanArray, Returns()]:
@@ -353,7 +353,7 @@ class HolidayNameFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day to evaluate.")],
     ) -> Annotated[pa.StringArray, Returns()]:
         """Compute the result column for each input row."""
         return _holiday_name_column(date, country=_DEFAULT_COUNTRY, subdiv=None)
@@ -393,7 +393,7 @@ class HolidayNameCountryFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day to evaluate.")],
         country: Annotated[str, ConstParam("ISO-3166 alpha-2 country code, e.g. 'US', 'GB'.")],
     ) -> Annotated[pa.StringArray, Returns()]:
         """Compute the result column for each input row."""
@@ -435,7 +435,7 @@ class HolidayNameSubdivFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day to evaluate.")],
         country: Annotated[str, ConstParam("ISO-3166 alpha-2 country code, e.g. 'US', 'GB'.")],
         subdiv: Annotated[str, ConstParam("Subdivision / state code, e.g. 'CA', 'NY'.")],
     ) -> Annotated[pa.StringArray, Returns()]:
@@ -489,7 +489,7 @@ class IsBusinessDayFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day to evaluate.")],
     ) -> Annotated[pa.BooleanArray, Returns()]:
         """Compute the result column for each input row."""
         return _is_business_day_column(date, country=_DEFAULT_COUNTRY, subdiv=None)
@@ -529,7 +529,7 @@ class IsBusinessDayCountryFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day to evaluate.")],
         country: Annotated[str, ConstParam("ISO-3166 alpha-2 country code, e.g. 'US', 'GB'.")],
     ) -> Annotated[pa.BooleanArray, Returns()]:
         """Compute the result column for each input row."""
@@ -571,7 +571,7 @@ class IsBusinessDaySubdivFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Date to test.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day to evaluate.")],
         country: Annotated[str, ConstParam("ISO-3166 alpha-2 country code, e.g. 'US', 'GB'.")],
         subdiv: Annotated[str, ConstParam("Subdivision / state code, e.g. 'CA', 'NY'.")],
     ) -> Annotated[pa.BooleanArray, Returns()]:
@@ -629,7 +629,7 @@ class AddBusinessDaysFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Starting date.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day to advance from.")],
         n: Annotated[pa.Int32Array, Param(doc="Business days to add (negative goes backwards).")],
     ) -> Annotated[pa.Date32Array, Returns()]:
         """Compute the result column for each input row."""
@@ -670,7 +670,7 @@ class AddBusinessDaysCountryFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        date: Annotated[pa.Date32Array, Param(doc="Starting date.")],
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day to advance from.")],
         n: Annotated[pa.Int32Array, Param(doc="Business days to add (negative goes backwards).")],
         country: Annotated[str, ConstParam("ISO-3166 alpha-2 country code, e.g. 'US', 'GB'.")],
     ) -> Annotated[pa.Date32Array, Returns()]:
@@ -728,8 +728,8 @@ class BusinessDaysBetweenFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        start: Annotated[pa.Date32Array, Param(doc="Start date (inclusive).")],
-        end: Annotated[pa.Date32Array, Param(doc="End date (exclusive).")],
+        start: Annotated[pa.Date32Array, Param(doc="Inclusive lower bound of the span to count over.")],
+        end: Annotated[pa.Date32Array, Param(doc="Exclusive upper bound of the span to count over.")],
     ) -> Annotated[pa.Int32Array, Returns()]:
         """Compute the result column for each input row."""
         return _business_days_between_column(start, end, country=_DEFAULT_COUNTRY, subdiv=None)
@@ -769,8 +769,8 @@ class BusinessDaysBetweenCountryFunction(ScalarFunction):
     @classmethod
     def compute(
         cls,
-        start: Annotated[pa.Date32Array, Param(doc="Start date (inclusive).")],
-        end: Annotated[pa.Date32Array, Param(doc="End date (exclusive).")],
+        start: Annotated[pa.Date32Array, Param(doc="Inclusive lower bound of the span to count over.")],
+        end: Annotated[pa.Date32Array, Param(doc="Exclusive upper bound of the span to count over.")],
         country: Annotated[str, ConstParam("ISO-3166 alpha-2 country code, e.g. 'US', 'GB'.")],
     ) -> Annotated[pa.Int32Array, Returns()]:
         """Compute the result column for each input row."""

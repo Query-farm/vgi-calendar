@@ -233,7 +233,7 @@ class BusinessDaysFunction(TableFunctionGenerator[_BusinessDaysArgs]):
 class _RruleArgs:
     """``rrule(dtstart, rule, count := ..., until := ...)``."""
 
-    dtstart: Annotated[_dt.datetime, Arg(0, arrow_type=pa.timestamp("us"), doc="Recurrence start (TIMESTAMP).")]
+    dtstart: Annotated[_dt.datetime, Arg(0, arrow_type=pa.timestamp("us"), doc="First instant of the recurrence.")]
     rule: Annotated[str, Arg(1, arrow_type=pa.string(), doc="RFC-5545 RRULE body or full string.")]
     count: Annotated[int | None, Arg("count", default=None, arrow_type=pa.int32(), doc="Max occurrences.")]
     until: Annotated[

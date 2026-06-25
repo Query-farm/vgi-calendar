@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#     "vgi-python[http]>=0.8.4",
+#     "vgi-python[http]>=0.8.5",
 #     "holidays>=0.50",
 #     "python-dateutil>=2.9",
 #     "exchange-calendars>=4.5",
@@ -34,8 +34,9 @@ Usage:
 from __future__ import annotations
 
 from vgi import Worker
-from vgi.catalog import Catalog, Schema
+from vgi.catalog import Catalog, Schema, View
 
+from vgi_calendar.meta import keywords_array
 from vgi_calendar.scalars import SCALAR_FUNCTIONS
 from vgi_calendar.tables import TABLE_FUNCTIONS
 from vgi_calendar.trading_scalars import TRADING_SCALAR_FUNCTIONS
@@ -81,7 +82,13 @@ _SCHEMA_DESCRIPTION_LLM = (
 )
 
 _SCHEMA_DESCRIPTION_MD = (
-    "Holiday, business-day, recurrence, and stock-exchange trading-calendar functions over Apache Arrow."
+    "Holiday, business-day, recurrence, and stock-exchange trading-calendar functions over Apache "
+    "Arrow. Scalars test and name public holidays, test business days, do business-day arithmetic, "
+    "compute Easter and ISO week / year-week labels, and answer trading-day, market-open/close, and "
+    "early-close questions. Table functions list a year's holidays, enumerate business days or "
+    "trading sessions in a range, expand RFC-5545 (RRULE) recurrences, and enumerate supported "
+    "countries and exchange MIC codes. Country/subdivision and exchange are arguments; `'US'` and "
+    "`'XNYS'` are only defaults."
 )
 
 # VGI506 — representative, catalog-qualified example queries for the schema.
@@ -102,13 +109,104 @@ _SCHEMA_EXAMPLE_QUERIES = (
     "SELECT * FROM cal.main.trading_schedule(DATE '2026-11-25', DATE '2026-11-30');"
 )
 
+# VGI311 — the parameterless table functions `supported_countries()` and
+# `exchanges()` always return the same rows, so we also expose each as a regular
+# VIEW of the same name. That lets consumers write `SELECT * FROM cal.main.<name>`
+# (no parentheses); the view simply scans the backing table function.
+_SUPPORTED_COUNTRIES_VIEW = View(
+    name="supported_countries",
+    definition="SELECT country, subdivision FROM cal.main.supported_countries()",
+    comment="Discovery table of every (country, subdivision) the holiday/business-day functions accept.",
+    column_comments={
+        "country": "ISO-3166 alpha-2 country code (e.g. 'US', 'GB').",
+        "subdivision": "Subdivision / state / province code, or NULL for a country-level entry.",
+    },
+    tags={
+        "vgi.title": "Supported Countries (table)",
+        "vgi.doc_llm": (
+            "A ready-to-scan **discovery table** of every `(country, subdivision)` pair the "
+            "holiday and business-day functions support, so you can find the codes to pass as "
+            "`country` / `subdiv` to `is_holiday`, `holiday_name`, `is_business_day`, `holidays`, "
+            "and friends. `country` is an ISO-3166 alpha-2 code; `subdivision` is a state/province "
+            "code or `NULL` for a country-level entry. This is the no-argument table form of the "
+            "`supported_countries()` table function -- query it directly with "
+            "`SELECT * FROM cal.main.supported_countries` (no parentheses). Coverage is broad "
+            "(hundreds of countries plus subdivisions); `'US'` is merely the default, not a limit."
+        ),
+        "vgi.doc_md": (
+            "## supported_countries (view)\n\n"
+            "Every **`(country, subdivision)`** the holiday functions support, as a plain table.\n\n"
+            "`country` is ISO-3166 alpha-2; `subdivision` is a state/province code or `NULL`. The "
+            "no-argument table form of `supported_countries()` -- scan it with "
+            "`SELECT * FROM cal.main.supported_countries`. Use it to find valid `country`/`subdiv` "
+            "arguments; `'US'` is just the default."
+        ),
+        "vgi.keywords": keywords_array(
+            "supported countries, list countries, available countries, subdivisions, "
+            "iso-3166, discovery, what countries, jurisdictions, countries table"
+        ),
+        "domain": "date-and-time",
+        "category": "calendar",
+        "topic": "supported-countries",
+        "vgi.example_queries": (
+            '[{"description": "How many countries are supported.", '
+            '"sql": "SELECT count(DISTINCT country) FROM cal.main.supported_countries"}, '
+            '{"description": "German subdivisions (Bundesländer).", '
+            '"sql": "SELECT subdivision FROM cal.main.supported_countries WHERE country = \'DE\'"}]'
+        ),
+    },
+)
+
+_EXCHANGES_VIEW = View(
+    name="exchanges",
+    definition="SELECT code FROM cal.main.exchanges()",
+    comment="Discovery table of every supported stock-exchange trading-calendar MIC code.",
+    column_comments={
+        "code": "Exchange MIC code (e.g. 'XNYS' = NYSE, 'XLON' = London).",
+    },
+    tags={
+        "vgi.title": "Supported Exchanges (table)",
+        "vgi.doc_llm": (
+            "A ready-to-scan **discovery table** of every supported stock-exchange trading "
+            "calendar, one MIC code per row. These are the codes you pass as the `exchange` "
+            "argument to the trading functions (`is_trading_day`, `market_open`, "
+            "`trading_schedule`, ...). This is the no-argument table form of the `exchanges()` "
+            "table function -- query it directly with `SELECT * FROM cal.main.exchanges` (no "
+            "parentheses). `'XNYS'` (NYSE) is merely the default; coverage spans roughly a hundred "
+            "exchange calendars via `exchange-calendars` (e.g. `'XLON'` London, `'XTKS'` Tokyo, "
+            "`'XNAS'` Nasdaq)."
+        ),
+        "vgi.doc_md": (
+            "## exchanges (view)\n\n"
+            "Every supported **exchange MIC code**, one per row, as a plain table.\n\n"
+            "The valid `exchange` arguments for the trading functions; `'XNYS'` is just the "
+            "default. The no-argument table form of `exchanges()` -- scan it with "
+            "`SELECT * FROM cal.main.exchanges`. ~100 calendars (`'XLON'`, `'XTKS'`, `'XNAS'`, ...)."
+        ),
+        "vgi.keywords": keywords_array(
+            "exchanges, list exchanges, mic codes, supported exchanges, trading calendars, "
+            "discovery, xnys xlon xtks, stock exchange codes, exchanges table"
+        ),
+        "domain": "date-and-time",
+        "category": "calendar",
+        "topic": "supported-exchanges",
+        "vgi.example_queries": (
+            '[{"description": "List all supported exchange MIC codes.", '
+            '"sql": "SELECT code FROM cal.main.exchanges ORDER BY code"}, '
+            '{"description": "Confirm the NYSE (XNYS) calendar is available.", '
+            '"sql": "SELECT count(*) AS n FROM cal.main.exchanges WHERE code = \'XNYS\'"}]'
+        ),
+    },
+)
+
+
 _CALENDAR_CATALOG = Catalog(
     name="cal",
     default_schema="main",
     comment="Holiday, business-day, recurrence, and stock-exchange trading-calendar math for SQL",
     tags={
         "vgi.title": "Calendar, Holiday & Trading-Day Math",
-        "vgi.keywords": (
+        "vgi.keywords": keywords_array(
             "calendar, holiday, public holiday, business day, working day, banking day, "
             "easter, iso week, year-week, recurrence, rrule, rfc-5545, trading day, "
             "trading calendar, exchange calendar, market open, market close, nyse, lse, "
@@ -129,7 +227,7 @@ _CALENDAR_CATALOG = Catalog(
             comment="Holiday, business-day, and recurrence calendar math for SQL",
             tags={
                 "vgi.title": "Calendar — main",
-                "vgi.keywords": (
+                "vgi.keywords": keywords_array(
                     "holiday, business day, trading day, easter, iso week, recurrence, rrule, "
                     "market open, market close, exchange calendar, supported countries, exchanges"
                 ),
@@ -137,12 +235,12 @@ _CALENDAR_CATALOG = Catalog(
                 "domain": "date-and-time",
                 "category": "calendar",
                 "topic": "holidays-business-days-trading-calendars",
-                "vgi.source_url": ("https://github.com/Query-farm/vgi-calendar/blob/main/calendar_worker.py"),
                 "vgi.example_queries": _SCHEMA_EXAMPLE_QUERIES,
                 "vgi.doc_llm": _SCHEMA_DESCRIPTION_LLM,
                 "vgi.doc_md": _SCHEMA_DESCRIPTION_MD,
             },
             functions=list(_FUNCTIONS),
+            views=[_SUPPORTED_COUNTRIES_VIEW, _EXCHANGES_VIEW],
         ),
     ],
 )
