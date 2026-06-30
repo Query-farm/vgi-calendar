@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#     "vgi-python[http]>=0.8.5",
+#     "vgi-python[http]>=0.9.0",
 #     "holidays>=0.50",
 #     "python-dateutil>=2.9",
 #     "exchange-calendars>=4.5",
