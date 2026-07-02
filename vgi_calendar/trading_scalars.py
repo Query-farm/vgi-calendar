@@ -103,14 +103,16 @@ class IsTradingDayExchangeFunction(ScalarFunction):
         categories = ["calendar", "trading"]
         tags = object_tags(
             "Is Trading Day On Exchange",
-            "Test whether a date is a **trading session on a specific exchange**. Pass an exchange "
-            "MIC code (e.g. `'XLON'` for the London Stock Exchange, `'XTKS'` for Tokyo) as the "
-            "second argument. Each exchange has its own holiday/weekend calendar via the "
+            "Test whether a date is a **trading session** on a given exchange. The `exchange` "
+            "argument is optional and defaults to `'XNYS'` (NYSE); pass a MIC code (e.g. `'XLON'` "
+            "for the London Stock Exchange, `'XTKS'` for Tokyo) for another market. Each exchange "
+            "has its own holiday/weekend calendar via the "
             "`exchange-calendars` library. Returns `BOOLEAN` per row (`NULL` date -> `NULL`); "
             "dates outside the calendar's coverage window return `NULL`. List valid MIC codes with "
             "`cal.exchanges()`.",
-            "## is_trading_day(date, exchange)\n\n"
-            "True if `date` is a **trading session on `exchange`** (MIC code, e.g. `'XLON'`).\n\n"
+            "## is_trading_day(date[, exchange])\n\n"
+            "True if `date` is a **trading session**; `exchange` defaults to `'XNYS'` (MIC code, "
+            "e.g. `'XLON'`).\n\n"
             "Per-row `BOOLEAN`; `NULL` outside the calendar window. See `cal.exchanges()` for "
             "codes.",
             "is trading day, exchange session, market open, london session, xlon, mic code, stock exchange calendar",
@@ -194,13 +196,15 @@ class NextTradingDayExchangeFunction(ScalarFunction):
         categories = ["calendar", "trading"]
         tags = object_tags(
             "Next Trading Day On Exchange",
-            "Return the **first trading session strictly after** a date on a specific exchange. "
-            "Pass an exchange MIC code (e.g. `'XTKS'` for Tokyo) as the second argument. The input "
+            "Return the **first trading session strictly after** a date. The `exchange` argument is "
+            "optional and defaults to `'XNYS'` (NYSE); pass a MIC code (e.g. `'XTKS'` for Tokyo) "
+            "for another market. The input "
             "date is never returned; the search skips that exchange's weekends and holidays. "
             "Returns `DATE` per row (`NULL` date -> `NULL`); `NULL` if the result is outside the "
             "calendar's coverage window. List valid codes with `cal.exchanges()`.",
-            "## next_trading_day(date, exchange)\n\n"
-            "First **session strictly after** `date` on `exchange` (e.g. `'XTKS'`).\n\n"
+            "## next_trading_day(date[, exchange])\n\n"
+            "First **session strictly after** `date`; `exchange` defaults to `'XNYS'` (e.g. "
+            "`'XTKS'`).\n\n"
             "Skips that exchange's weekends + holidays. Per-row `DATE`. See `cal.exchanges()`.",
             "next trading day, exchange next session, roll forward, tokyo session, xtks, next market open, mic code",
             _SRC,
@@ -285,13 +289,15 @@ class PreviousTradingDayExchangeFunction(ScalarFunction):
         categories = ["calendar", "trading"]
         tags = object_tags(
             "Previous Trading Day On Exchange",
-            "Return the **last trading session strictly before** a date on a specific exchange. "
-            "Pass an exchange MIC code (e.g. `'XLON'` for London) as the second argument. The "
+            "Return the **last trading session strictly before** a date. The `exchange` argument is "
+            "optional and defaults to `'XNYS'` (NYSE); pass a MIC code (e.g. `'XLON'` for London) "
+            "for another market. The "
             "input date is never returned; the search skips that exchange's weekends and holidays. "
             "Returns `DATE` per row (`NULL` date -> `NULL`); `NULL` if outside the coverage "
             "window. List valid codes with `cal.exchanges()`.",
-            "## previous_trading_day(date, exchange)\n\n"
-            "Last **session strictly before** `date` on `exchange` (e.g. `'XLON'`).\n\n"
+            "## previous_trading_day(date[, exchange])\n\n"
+            "Last **session strictly before** `date`; `exchange` defaults to `'XNYS'` (e.g. "
+            "`'XLON'`).\n\n"
             "Skips that exchange's weekends + holidays. Per-row `DATE`. See `cal.exchanges()`.",
             "previous trading day, exchange prior session, roll back, london session, xlon, "
             "prior market open, mic code",
@@ -380,13 +386,15 @@ class AddTradingDaysExchangeFunction(ScalarFunction):
         categories = ["calendar", "trading"]
         tags = object_tags(
             "Add Trading Days On Exchange",
-            "Advance a date by **N trading sessions on a specific exchange**, skipping that "
-            "exchange's non-session days. Pass an exchange MIC code (e.g. `'XLON'`) as the third "
-            "argument. `N` may be negative to step backwards; the result is always a trading "
+            "Advance a date by **N trading sessions**, skipping the exchange's non-session days. "
+            "The `exchange` argument is optional and defaults to `'XNYS'` (NYSE); pass a MIC code "
+            "(e.g. `'XLON'`) for another market. `N` may be negative to step backwards; the result "
+            "is always a trading "
             "session. Returns `DATE` per row (`NULL` inputs -> `NULL`); `NULL` if outside the "
             "calendar's coverage window. List valid codes with `cal.exchanges()`.",
-            "## add_trading_days(date, n, exchange)\n\n"
-            "Advance `date` by **`n` trading sessions on `exchange`** (e.g. `'XLON'`).\n\n"
+            "## add_trading_days(date, n[, exchange])\n\n"
+            "Advance `date` by **`n` trading sessions**; `exchange` defaults to `'XNYS'` (e.g. "
+            "`'XLON'`).\n\n"
             "Skips that exchange's non-session days; `n` can be negative. Per-row `DATE`. See "
             "`cal.exchanges()`.",
             "add trading days, exchange session offset, settlement, london sessions, xlon, advance sessions, mic code",
@@ -476,13 +484,15 @@ class TradingDaysBetweenExchangeFunction(ScalarFunction):
         categories = ["calendar", "trading"]
         tags = object_tags(
             "Count Trading Days Between On Exchange",
-            "Count the number of **trading sessions in `[start, end)` on a specific exchange** -- "
-            "`start` inclusive, `end` exclusive -- skipping that exchange's weekends and holidays. "
-            "Pass an exchange MIC code (e.g. `'XLON'`) as the third argument. Returns `INTEGER` per "
+            "Count the number of **trading sessions in `[start, end)`** -- "
+            "`start` inclusive, `end` exclusive -- skipping the exchange's weekends and holidays. "
+            "The `exchange` argument is optional and defaults to `'XNYS'` (NYSE); pass a MIC code "
+            "(e.g. `'XLON'`) for another market. Returns `INTEGER` per "
             "row (`NULL` if a bound is `NULL`); negative if `end` precedes `start`. List valid "
             "codes with `cal.exchanges()`.",
-            "## trading_days_between(start, end, exchange)\n\n"
-            "Count **trading sessions in `[start, end)`** on `exchange` (e.g. `'XLON'`).\n\n"
+            "## trading_days_between(start, end[, exchange])\n\n"
+            "Count **trading sessions in `[start, end)`**; `exchange` defaults to `'XNYS'` (e.g. "
+            "`'XLON'`).\n\n"
             "Skips that exchange's weekends + holidays; negative if reversed. Per-row `INTEGER`. "
             "See `cal.exchanges()`.",
             "trading days between, exchange session count, holding period, london sessions, xlon, "
@@ -573,14 +583,15 @@ class MarketOpenExchangeFunction(ScalarFunction):
         categories = ["calendar", "trading"]
         tags = object_tags(
             "Market Open Instant On Exchange",
-            "Return the **market-open instant on a specific exchange** for a date, as a UTC "
-            "`TIMESTAMPTZ`, or `NULL` if it is not a session there. Pass an exchange MIC code "
-            "(e.g. `'XLON'`) as the second argument. The instant is timezone-aware (UTC) so it is "
+            "Return the **market-open instant** for a date as a UTC "
+            "`TIMESTAMPTZ`, or `NULL` if it is not a session. The `exchange` argument is optional "
+            "and defaults to `'XNYS'` (NYSE); pass a MIC code "
+            "(e.g. `'XLON'`) for another market. The instant is timezone-aware (UTC) so it is "
             "directly comparable across exchanges and DST. Returns `NULL` for non-sessions and "
             "out-of-window dates. List valid codes with `cal.exchanges()`.",
-            "## market_open(date, exchange)\n\n"
-            "**UTC open instant** (`TIMESTAMPTZ`) for a session on `exchange` (e.g. `'XLON'`), "
-            "else `NULL`.\n\n"
+            "## market_open(date[, exchange])\n\n"
+            "**UTC open instant** (`TIMESTAMPTZ`) for a session, else `NULL`; `exchange` defaults "
+            "to `'XNYS'` (e.g. `'XLON'`).\n\n"
             "Timezone-aware (UTC), DST-correct. See `cal.exchanges()` and `market_close`.",
             "market open, exchange opening, session open, london open, xlon, trading hours, utc timestamp, mic code",
             _SRC,
@@ -655,15 +666,16 @@ class MarketCloseExchangeFunction(ScalarFunction):
         categories = ["calendar", "trading"]
         tags = object_tags(
             "Market Close Instant On Exchange",
-            "Return the **market-close instant on a specific exchange** for a date, as a UTC "
-            "`TIMESTAMPTZ`, or `NULL` if it is not a session there. Pass an exchange MIC code "
-            "(e.g. `'XLON'`) as the second argument. The close reflects early-close half-days for "
+            "Return the **market-close instant** for a date, as a UTC "
+            "`TIMESTAMPTZ`, or `NULL` if it is not a session. The `exchange` argument is optional "
+            "and defaults to `'XNYS'` (NYSE); pass a MIC code "
+            "(e.g. `'XLON'`) for another market. The close reflects early-close half-days for "
             "that exchange. Timezone-aware (UTC), DST-correct, directly comparable across "
             "exchanges. Returns `NULL` for non-sessions / out-of-window dates. List valid codes "
             "with `cal.exchanges()`.",
-            "## market_close(date, exchange)\n\n"
-            "**UTC close instant** (`TIMESTAMPTZ`) for a session on `exchange` (e.g. `'XLON'`), "
-            "else `NULL`.\n\n"
+            "## market_close(date[, exchange])\n\n"
+            "**UTC close instant** (`TIMESTAMPTZ`) for a session, else `NULL`; `exchange` defaults "
+            "to `'XNYS'` (e.g. `'XLON'`).\n\n"
             "Reflects that exchange's early closes; timezone-aware (UTC). See `cal.exchanges()` "
             "and `is_early_close`.",
             "market close, exchange closing, session close, early close, london close, xlon, "
@@ -749,13 +761,15 @@ class IsEarlyCloseExchangeFunction(ScalarFunction):
         categories = ["calendar", "trading"]
         tags = object_tags(
             "Is Early-Close Session On Exchange",
-            "Test whether a date is an **early-close (half-day) session on a specific exchange**. "
-            "Pass an exchange MIC code (e.g. `'XLON'`) as the second argument; e.g. Christmas Eve "
+            "Test whether a date is an **early-close (half-day) trading session**. The `exchange` "
+            "argument is optional and defaults to `'XNYS'` (NYSE); pass a MIC code (e.g. `'XLON'`) "
+            "for another market -- e.g. Christmas Eve "
             "is an early close on the London Stock Exchange. Returns `BOOLEAN` per row: `true` for "
             "shortened sessions, `false` for normal sessions, `NULL` for non-sessions or "
             "out-of-window dates. List valid codes with `cal.exchanges()`.",
-            "## is_early_close(date, exchange)\n\n"
-            "True if `date` is an **early-close session on `exchange`** (e.g. `'XLON'`).\n\n"
+            "## is_early_close(date[, exchange])\n\n"
+            "True if `date` is an **early-close session**; `exchange` defaults to `'XNYS'` (e.g. "
+            "`'XLON'`).\n\n"
             "`false` for normal sessions, `NULL` for non-sessions. Per-row `BOOLEAN`. See "
             "`cal.exchanges()` and `market_close`.",
             "is early close, half day, exchange early close, shortened session, london half day, "
