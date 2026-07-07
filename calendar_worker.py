@@ -228,6 +228,28 @@ _SCHEMA_CATEGORIES = json.dumps(
     ]
 )
 
+# VGI509 — at least one guaranteed-runnable example at the catalog level. Each is
+# fully catalog-qualified and offline/deterministic so it runs as written.
+_EXECUTABLE_EXAMPLES = json.dumps(
+    [
+        {
+            "name": "is-christmas-a-holiday",
+            "description": "Whether 25 December 2026 is a US public holiday.",
+            "sql": "SELECT cal.main.is_holiday(DATE '2026-12-25') AS is_holiday",
+        },
+        {
+            "name": "add-business-days",
+            "description": "Two US business days after 24 December 2026 (skips Christmas + weekend).",
+            "sql": "SELECT cal.main.add_business_days(DATE '2026-12-24', 2) AS due",
+        },
+        {
+            "name": "weekly-recurrence",
+            "description": "The first four weekly occurrences from 1 January 2026.",
+            "sql": "SELECT seq, occurrence FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4') ORDER BY seq",
+        },
+    ]
+)
+
 # VGI152 — the fixed agent-suitability task suite used by `vgi-lint simulate`.
 # Each task's `prompt` is all the analyst sees; `reference_sql` is grader-only
 # and must be deterministic. Chosen to exercise the main surface (holiday /
@@ -298,6 +320,7 @@ _CALENDAR_CATALOG = Catalog(
         "vgi.license": "MIT",
         "vgi.support_contact": "https://github.com/Query-farm/vgi-calendar/issues",
         "vgi.support_policy_url": "https://github.com/Query-farm/vgi-calendar/blob/main/README.md",
+        "vgi.executable_examples": _EXECUTABLE_EXAMPLES,
         "vgi.agent_test_tasks": _AGENT_TEST_TASKS,
     },
     source_url="https://github.com/Query-farm/vgi-calendar",
