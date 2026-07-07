@@ -1,0 +1,18 @@
+# vgi-lint-check configuration for the vgi-calendar worker.
+#
+# The only reference table, `supported_countries`, enumerates every
+# `(country, subdivision)` pair the holiday/business-day functions accept.
+# `subdivision` is legitimately NULL for country-level entries, so the row
+# identity is a UNIQUE `(country, subdivision)` pair, NOT a primary key — a PK
+# cannot include a nullable column. There is no not-null unique column to serve
+# as a PK, so the primary-key rules do not apply to this table by design:
+#
+#   - VGI805 (constraints but no primary key)
+#   - VGI807 (each table should declare a primary key)
+#
+# Both are suppressed here with that rationale. All other rules remain enabled
+# and gate at `info`.
+[tool.vgi-lint-check]
+select = ["ALL"]
+ignore = ["VGI805", "VGI807"]
+fail_on = "info"

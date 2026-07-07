@@ -327,7 +327,7 @@ _CALENDAR_CATALOG = Catalog(
     schemas=[
         Schema(
             name="main",
-            comment="Holiday, business-day, and recurrence calendar math for SQL",
+            comment="Holiday, business-day, and recurrence functions plus the supported-countries table",
             tags={
                 "vgi.title": "Calendar — main",
                 "vgi.keywords": keywords_array(
