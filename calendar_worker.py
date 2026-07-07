@@ -1,10 +1,9 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#     "vgi-python[http]>=0.9.0",
+#     "vgi-python[http]>=0.10.0",
 #     "holidays>=0.50",
 #     "python-dateutil>=2.9",
-#     "exchange-calendars>=4.5",
 # ]
 # ///
 """VGI worker exposing calendar / holiday / business-day / recurrence math to SQL.
@@ -24,11 +23,8 @@ Usage:
     SELECT cal.main.iso_year_week(DATE '2026-06-22');
     SELECT * FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4');
 
-    -- Trading / exchange calendars (default exchange 'XNYS' = NYSE):
-    SELECT cal.main.is_trading_day(DATE '2026-01-01');             -- false
-    SELECT cal.main.market_close(DATE '2026-11-27', 'XNYS');       -- early close
-    SELECT * FROM cal.main.trading_schedule(DATE '2026-11-25', DATE '2026-11-30');
-    SELECT * FROM cal.main.exchanges;
+For stock-exchange trading calendars (sessions, market hours, schedules), see the
+companion worker vgi-trading-calendar.
 """
 
 from __future__ import annotations
@@ -41,14 +37,10 @@ from vgi.catalog import Catalog, Schema, Table
 from vgi_calendar.meta import keywords_array
 from vgi_calendar.scalars import SCALAR_FUNCTIONS
 from vgi_calendar.tables import TABLE_FUNCTIONS, SupportedCountriesFunction
-from vgi_calendar.trading_scalars import TRADING_SCALAR_FUNCTIONS
-from vgi_calendar.trading_tables import TRADING_TABLE_FUNCTIONS, ExchangesFunction
 
 _FUNCTIONS: list[type] = [
     *SCALAR_FUNCTIONS,
     *TABLE_FUNCTIONS,
-    *TRADING_SCALAR_FUNCTIONS,
-    *TRADING_TABLE_FUNCTIONS,
 ]
 
 # VGI413 — the schema's `vgi.categories` registry (see below) requires every
@@ -73,19 +65,8 @@ _CATEGORY_BY_NAME: dict[str, str] = {
     "easter": "date-parts",
     "iso_week": "date-parts",
     "iso_year_week": "date-parts",
-    # Stock-exchange trading calendars
-    "is_trading_day": "trading",
-    "next_trading_day": "trading",
-    "previous_trading_day": "trading",
-    "add_trading_days": "trading",
-    "trading_days_between": "trading",
-    "market_open": "trading",
-    "market_close": "trading",
-    "is_early_close": "trading",
-    "trading_sessions": "trading",
-    "trading_schedule": "trading",
-    # NB: `supported_countries` / `exchanges` are scan-backed TABLES (see below),
-    # not functions, so they carry `vgi.category` on the Table directly and are
+    # NB: `supported_countries` is a scan-backed TABLE (see below), not a
+    # function, so it carries `vgi.category` on the Table directly and is
     # intentionally absent from this function-name map.
 }
 
@@ -98,44 +79,39 @@ _CATALOG_DESCRIPTION_LLM = (
     "holiday (hundreds of countries and subdivisions via the `holidays` library), advance dates by "
     "business days and count business days between two dates, compute Easter and ISO week / "
     "year-week labels, list a year's holidays, enumerate business days in a range, and expand "
-    "RFC-5545 (RRULE) recurrence rules into timestamps. Also covers stock-exchange trading "
-    "calendars (default 'XNYS' = NYSE): test trading days, get market open/close instants "
-    "(including early closes), list trading sessions and the per-session schedule for a date "
-    "range, and enumerate supported exchange MIC codes. Use for holiday, business-day, "
-    "recurrence, and market-hours questions in SQL."
+    "RFC-5545 (RRULE) recurrence rules into timestamps. Use for holiday, business-day, "
+    "recurrence, and calendar-label questions in SQL. For stock-exchange trading calendars "
+    "(sessions, market hours, schedules), see the companion vgi-trading-calendar worker."
 )
 
 _CATALOG_DESCRIPTION_MD = (
-    "# Calendar, Holiday & Trading-Day Math in SQL\n\n"
-    "**`cal` brings public-holiday lookups, business-day arithmetic, RFC-5545 (RRULE) "
-    "recurrence expansion, and stock-exchange trading calendars directly into DuckDB SQL — no "
-    "ETL, no Python glue, just `SELECT`.** Ask whether a date is a holiday or a working day, name "
-    "the holiday, add or count business days, expand a recurrence rule into a series of "
-    "timestamps, or check market open/close hours for the NYSE and ~100 other exchanges, all as "
-    "ordinary SQL expressions and table functions.\n\n"
+    "# Calendar, Holiday & Recurrence Math in SQL\n\n"
+    "**`cal` brings public-holiday lookups, business-day arithmetic, and RFC-5545 (RRULE) "
+    "recurrence expansion directly into DuckDB SQL — no ETL, no Python glue, just `SELECT`.** Ask "
+    "whether a date is a holiday or a working day, name the holiday, add or count business days, "
+    "or expand a recurrence rule into a series of timestamps, all as ordinary SQL expressions and "
+    "table functions.\n\n"
     "This VGI worker is for analysts, data engineers, and application developers who need correct "
     "calendar logic close to their data: payment and settlement date math, SLA and business-day "
-    "deadlines, payroll and billing cycles, scheduling and reminders, trading-day filtering, and "
-    "market-hours analytics. It exposes a single `cal` catalog (schema `main`) over Apache Arrow, "
-    "so every function streams results back to DuckDB with native types — `DATE`, `TIMESTAMP`, "
-    "and `TIMESTAMPTZ` round-trip cleanly. Coverage is global, not US-centric: hundreds of "
-    "countries and their subdivisions are supported, and `'US'` / `'XNYS'` (NYSE) are merely the "
-    "default arguments, not limits.\n\n"
+    "deadlines, payroll and billing cycles, and scheduling and reminders. It exposes a single "
+    "`cal` catalog (schema `main`) over Apache Arrow, so every function streams results back to "
+    "DuckDB with native types — `DATE`, `TIMESTAMP`, and `TIMESTAMPTZ` round-trip cleanly. "
+    "Coverage is global, not US-centric: hundreds of countries and their subdivisions are "
+    "supported, and `'US'` is merely the default argument, not a limit.\n\n"
     "The holiday and business-day engine is powered by the "
     "[holidays](https://github.com/vacanza/holidays) library "
     "([docs](https://holidays.readthedocs.io/)), which models hundreds of national and "
     "subdivision calendars. Recurrence and Easter math come from "
     "[python-dateutil](https://github.com/dateutil/dateutil) "
     "([docs](https://dateutil.readthedocs.io/)), whose `rrulestr` parser implements the "
-    "[RFC-5545](https://datatracker.ietf.org/doc/html/rfc5545) recurrence grammar. Trading "
-    "calendars are provided by "
-    "[exchange-calendars](https://github.com/gerrymanoim/exchange_calendars), covering roughly a "
-    "hundred exchanges including early closes and holiday sessions.\n\n"
+    "[RFC-5545](https://datatracker.ietf.org/doc/html/rfc5545) recurrence grammar. For "
+    "stock-exchange trading calendars (sessions, market hours, and schedules), see the companion "
+    "[vgi-trading-calendar](https://github.com/Query-farm/vgi-trading-calendar) worker.\n\n"
     "Per-row questions are answered by scalar functions you can drop straight into a projection "
-    "or predicate; set-returning questions — a year's holidays, a range of working days or "
-    "trading sessions, an expanded recurrence — are table functions. Country/subdivision and "
-    "exchange are ordinary arguments that default to `'US'` and `'XNYS'`. List the schema to "
-    "discover the full surface and each function's arguments; a few starting points:\n\n"
+    "or predicate; set-returning questions — a year's holidays, a range of working days, an "
+    "expanded recurrence — are table functions. Country/subdivision are ordinary arguments that "
+    "default to `'US'`. List the schema to discover the full surface and each function's "
+    "arguments; a few starting points:\n\n"
     "```sql\n"
     "SELECT cal.main.is_holiday(DATE '2026-12-25');\n"
     "SELECT cal.main.add_business_days(DATE '2026-12-24', 2);\n"
@@ -144,28 +120,26 @@ _CATALOG_DESCRIPTION_MD = (
 )
 
 _SCHEMA_DESCRIPTION_LLM = (
-    "Holiday, business-day, recurrence, and trading-calendar functions: holiday/business-day "
-    "tests and names, business-day arithmetic, Easter and ISO week labels, holiday and "
-    "business-day listings, RFC-5545 recurrence expansion, and stock-exchange trading sessions, "
-    "market open/close, and schedules."
+    "Holiday, business-day, and recurrence functions: holiday/business-day tests and names, "
+    "business-day arithmetic, Easter and ISO week labels, holiday and business-day listings, and "
+    "RFC-5545 recurrence expansion."
 )
 
 _SCHEMA_DESCRIPTION_MD = (
-    "## Calendar, holiday & trading-day math\n\n"
-    "Holiday, business-day, recurrence, and stock-exchange trading-calendar functions over Apache "
-    "Arrow, exposed as ordinary DuckDB SQL.\n\n"
+    "## Calendar, holiday & recurrence math\n\n"
+    "Holiday, business-day, and recurrence functions over Apache Arrow, exposed as ordinary "
+    "DuckDB SQL.\n\n"
     "**Key concepts**\n\n"
     "- Scalar functions answer one question per row and slot into a projection or predicate.\n"
-    "- Table functions return sets of rows: a year's holidays, a range of working days or trading "
-    "sessions, or an expanded recurrence.\n"
-    "- Country/subdivision and exchange are ordinary arguments; `'US'` and `'XNYS'` (NYSE) are "
-    "only defaults, not limits — coverage is global.\n"
+    "- Table functions return sets of rows: a year's holidays, a range of working days, or an "
+    "expanded recurrence.\n"
+    "- Country/subdivision are ordinary arguments; `'US'` is only a default, not a limit — "
+    "coverage is global.\n"
     "- `DATE`, `TIMESTAMP`, and `TIMESTAMPTZ` round-trip natively over Arrow.\n\n"
     "**When to use it**\n\n"
     "Reach for this schema for holiday and business-day date math (settlement, SLA, payroll, "
-    "billing), calendar labels (Easter, ISO week / year-week), RFC-5545 recurrence expansion, and "
-    "trading-day / market-hours analytics. List the schema to discover the functions and their "
-    "arguments."
+    "billing), calendar labels (Easter, ISO week / year-week), and RFC-5545 recurrence expansion. "
+    "List the schema to discover the functions and their arguments."
 )
 
 # VGI506 — representative, catalog-qualified example queries for the schema.
@@ -181,16 +155,15 @@ _SCHEMA_EXAMPLE_QUERIES = (
     "SELECT cal.main.iso_year_week(DATE '2026-06-22');\n"
     "SELECT * FROM cal.main.holidays(2026, country := 'US', subdiv := 'CA');\n"
     "SELECT * FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4');\n"
-    "SELECT cal.main.is_trading_day(DATE '2026-01-01');\n"
-    "SELECT cal.main.market_close(DATE '2026-11-27');\n"
-    "SELECT * FROM cal.main.trading_schedule(DATE '2026-11-25', DATE '2026-11-30');"
+    "SELECT * FROM cal.main.business_days(DATE '2026-12-21', DATE '2026-12-31');\n"
+    "SELECT * FROM cal.main.supported_countries ORDER BY country;"
 )
 
-# VGI311 — the `supported_countries` and `exchanges` reference datasets always
-# return the same rows, so we expose each as a regular scan-backed TABLE: the
-# `Table(function=…)` form serves the rows of the backing generator directly,
-# letting consumers write `SELECT * FROM cal.main.<name>` (no parentheses) with
-# no redundant view-over-a-table-function layer (see vgi-lint VGI145).
+# VGI311 — the `supported_countries` reference dataset always returns the same
+# rows, so we expose it as a regular scan-backed TABLE: the `Table(function=…)`
+# form serves the rows of the backing generator directly, letting consumers
+# write `SELECT * FROM cal.main.supported_countries` (no parentheses) with no
+# redundant view-over-a-table-function layer (see vgi-lint VGI145).
 _SUPPORTED_COUNTRIES_TABLE = Table(
     name="supported_countries",
     function=SupportedCountriesFunction,
@@ -239,54 +212,8 @@ _SUPPORTED_COUNTRIES_TABLE = Table(
     },
 )
 
-_EXCHANGES_TABLE = Table(
-    name="exchanges",
-    function=ExchangesFunction,
-    comment="Discovery table of every supported stock-exchange trading-calendar MIC code.",
-    # Each MIC code uniquely identifies one exchange calendar -> natural primary key.
-    primary_key=(("code",),),
-    column_comments={
-        "code": "Exchange MIC code (e.g. 'XNYS' = NYSE, 'XLON' = London).",
-    },
-    tags={
-        "vgi.title": "Supported Exchanges (table)",
-        "vgi.category": "discovery",
-        "vgi.doc_llm": (
-            "A ready-to-scan **discovery table** of every supported stock-exchange trading "
-            "calendar, one MIC code per row. These are the codes you pass as the `exchange` "
-            "argument to the trading functions (`is_trading_day`, `market_open`, "
-            "`trading_schedule`, ...). Reference it directly by name (no parentheses) in a "
-            "`FROM` clause. "
-            "`'XNYS'` (NYSE) is merely the default; coverage spans roughly a hundred "
-            "exchange calendars via `exchange-calendars` (e.g. `'XLON'` London, `'XTKS'` Tokyo, "
-            "`'XNAS'` Nasdaq)."
-        ),
-        "vgi.doc_md": (
-            "## exchanges (table)\n\n"
-            "Every supported **exchange MIC code**, one per row, as a plain table.\n\n"
-            "The valid `exchange` arguments for the trading functions; `'XNYS'` is just the "
-            "default. Scan it directly by name (no parentheses). "
-            "~100 calendars (`'XLON'`, `'XTKS'`, `'XNAS'`, ...)."
-        ),
-        "vgi.keywords": keywords_array(
-            "exchanges, list exchanges, mic codes, supported exchanges, trading calendars, "
-            "discovery, xnys xlon xtks, stock exchange codes, exchanges table"
-        ),
-        "domain": "date-and-time",
-        "category": "calendar",
-        "topic": "supported-exchanges",
-        "vgi.example_queries": (
-            '[{"description": "List all supported exchange MIC codes.", '
-            '"sql": "SELECT code FROM cal.main.exchanges ORDER BY code"}, '
-            '{"description": "Confirm the NYSE (XNYS) calendar is available.", '
-            '"sql": "SELECT count(*) AS n FROM cal.main.exchanges WHERE code = \'XNYS\'"}]'
-        ),
-    },
-)
-
-
 # VGI413 — the schema's category registry. Ordered; each object's `vgi.category`
-# (stamped above / on the views) names one of these. Drives listing navigation
+# (stamped above / on the table) names one of these. Drives listing navigation
 # and SEO sections.
 _SCHEMA_CATEGORIES = json.dumps(
     [
@@ -297,18 +224,14 @@ _SCHEMA_CATEGORIES = json.dumps(
         },
         {"name": "recurrence", "description": "RFC-5545 (RRULE) recurrence expansion into timestamps."},
         {"name": "date-parts", "description": "Calendar labels: Easter and ISO week / year-week."},
-        {
-            "name": "trading",
-            "description": "Stock-exchange trading calendars: sessions, market hours, and schedules.",
-        },
-        {"name": "discovery", "description": "Reference tables of supported countries and exchange codes."},
+        {"name": "discovery", "description": "Reference table of supported countries."},
     ]
 )
 
 # VGI152 — the fixed agent-suitability task suite used by `vgi-lint simulate`.
 # Each task's `prompt` is all the analyst sees; `reference_sql` is grader-only
 # and must be deterministic. Chosen to exercise the main surface (holiday /
-# business-day / recurrence scalars + table functions and the trading calendar).
+# business-day / recurrence scalars + table functions).
 _AGENT_TEST_TASKS = json.dumps(
     [
         {
@@ -340,25 +263,6 @@ _AGENT_TEST_TASKS = json.dumps(
             "ignore_column_names": True,
         },
         {
-            "name": "next-nyse-session-after-new-year",
-            "prompt": (
-                "Using the cal worker, what is the first New York Stock Exchange trading session "
-                "strictly after 1 January 2026? Return a single date."
-            ),
-            "reference_sql": "SELECT cal.main.next_trading_day(DATE '2026-01-01') AS next_session",
-            "ignore_column_names": True,
-        },
-        {
-            "name": "add-ten-nyse-sessions",
-            "prompt": (
-                "Using the cal worker, what calendar date is 10 New York Stock Exchange trading "
-                "sessions after 2 January 2026 (skipping weekends and exchange holidays)? Return a "
-                "single date."
-            ),
-            "reference_sql": "SELECT cal.main.add_trading_days(DATE '2026-01-02', 10) AS result",
-            "ignore_column_names": True,
-        },
-        {
             "name": "mon-wed-fri-recurrence",
             "prompt": (
                 "Using the cal worker's RFC-5545 recurrence support, list the first six occurrences "
@@ -372,16 +276,6 @@ _AGENT_TEST_TASKS = json.dumps(
             ),
             "ignore_column_names": True,
         },
-        {
-            "name": "nyse-early-close-instant",
-            "prompt": (
-                "Using the cal worker, at what UTC timestamp does the New York Stock Exchange close "
-                "on 27 November 2026 (the day after US Thanksgiving, an early-close half-day)? "
-                "Return a single timestamp."
-            ),
-            "reference_sql": "SELECT cal.main.market_close(DATE '2026-11-27') AS market_close",
-            "ignore_column_names": True,
-        },
     ]
 )
 
@@ -389,13 +283,12 @@ _AGENT_TEST_TASKS = json.dumps(
 _CALENDAR_CATALOG = Catalog(
     name="cal",
     default_schema="main",
-    comment="Holiday, business-day, recurrence, and stock-exchange trading-calendar math for SQL",
+    comment="Holiday, business-day, and recurrence calendar math for SQL",
     tags={
-        "vgi.title": "Calendar, Holiday & Trading-Day Math",
+        "vgi.title": "Calendar, Holiday & Recurrence Math",
         "vgi.keywords": keywords_array(
             "calendar, holiday, public holiday, business day, working day, banking day, "
-            "easter, iso week, year-week, recurrence, rrule, rfc-5545, trading day, "
-            "trading calendar, exchange calendar, market open, market close, nyse, lse, "
+            "easter, iso week, year-week, recurrence, rrule, rfc-5545, "
             "date math, weekday, country, subdivision"
         ),
         "vgi.doc_llm": _CATALOG_DESCRIPTION_LLM,
@@ -415,20 +308,20 @@ _CALENDAR_CATALOG = Catalog(
             tags={
                 "vgi.title": "Calendar — main",
                 "vgi.keywords": keywords_array(
-                    "holiday, business day, trading day, easter, iso week, recurrence, rrule, "
-                    "market open, market close, exchange calendar, supported countries, exchanges"
+                    "holiday, business day, easter, iso week, year-week, recurrence, rrule, "
+                    "holidays, business days, supported countries"
                 ),
                 # VGI123 classifying tags use BARE keys (not vgi.-namespaced).
                 "domain": "date-and-time",
                 "category": "calendar",
-                "topic": "holidays-business-days-trading-calendars",
+                "topic": "holidays-business-days-recurrence",
                 "vgi.categories": _SCHEMA_CATEGORIES,
                 "vgi.example_queries": _SCHEMA_EXAMPLE_QUERIES,
                 "vgi.doc_llm": _SCHEMA_DESCRIPTION_LLM,
                 "vgi.doc_md": _SCHEMA_DESCRIPTION_MD,
             },
             functions=list(_FUNCTIONS),
-            tables=[_SUPPORTED_COUNTRIES_TABLE, _EXCHANGES_TABLE],
+            tables=[_SUPPORTED_COUNTRIES_TABLE],
         ),
     ],
 )

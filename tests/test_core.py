@@ -202,3 +202,23 @@ class TestErrorAndEdgeCases:
 
     def test_easter_leap_year(self) -> None:
         assert core.easter(2024) == dt.date(2024, 3, 31)
+
+
+class TestHolidayCoverage:
+    """The holiday layer is not US-only -- it covers hundreds of countries."""
+
+    def test_many_countries_supported(self) -> None:
+        rows = core.supported_countries()
+        countries = {c for c, _ in rows}
+        assert len(countries) > 100
+        assert {"US", "GB", "DE", "JP", "BR", "IN", "FR"} <= countries
+
+    def test_non_us_holiday(self) -> None:
+        # Bastille Day is a French national holiday, not a US one.
+        assert core.is_holiday(dt.date(2026, 7, 14), "FR") is True
+        assert core.is_holiday(dt.date(2026, 7, 14), "US") is False
+
+    def test_subdivisions_present(self) -> None:
+        rows = core.supported_countries()
+        de_subdivs = {s for c, s in rows if c == "DE" and s is not None}
+        assert "BY" in de_subdivs  # Bavaria
