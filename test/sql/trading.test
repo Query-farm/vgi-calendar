@@ -120,7 +120,7 @@ SELECT is_early_close FROM cal.trading_schedule(DATE '2026-11-27', DATE '2026-11
 true
 
 query I
-SELECT count(*) FROM cal.exchanges() WHERE code IN ('XNYS', 'XNAS', 'XLON', 'XTKS');
+SELECT count(*) FROM cal.exchanges WHERE code IN ('XNYS', 'XNAS', 'XLON', 'XTKS');
 ----
 4
 
@@ -130,13 +130,13 @@ SELECT count(*) FROM cal.exchanges() WHERE code IN ('XNYS', 'XNAS', 'XLON', 'XTK
 
 # Hundreds of countries are supported (the 'US' default is just a default).
 query I
-SELECT count(DISTINCT country) > 100 FROM cal.supported_countries();
+SELECT count(DISTINCT country) > 100 FROM cal.supported_countries;
 ----
 true
 
 # Subdivisions are exposed (German Bundesländer).
 query I
-SELECT count(*) > 0 FROM cal.supported_countries() WHERE country = 'DE' AND subdivision = 'BY';
+SELECT count(*) > 0 FROM cal.supported_countries WHERE country = 'DE' AND subdivision = 'BY';
 ----
 true
 

@@ -39,8 +39,8 @@ SELECT * FROM cal.trading_schedule(DATE '2026-11-25', DATE '2026-11-30');
 
 > **Not US-centric.** The `'US'` you see in examples is only a *default*. The
 > holiday functions cover **every country `holidays` supports** (run
-> `SELECT count(DISTINCT country) FROM cal.supported_countries();` — hundreds),
-> and trading functions cover every market in `cal.exchanges()`.
+> `SELECT count(DISTINCT country) FROM cal.supported_countries;` — hundreds),
+> and trading functions cover every market in `cal.exchanges`.
 
 ## Scalars (per-row) vs. table functions (set-returning)
 
@@ -101,8 +101,8 @@ The split follows what the VGI SDK allows for each function shape:
 
 The `country` default is `'US'` and the `exchange` default is `'XNYS'` (NYSE);
 for `is_holiday` / `holiday_name` / `is_business_day` a `subdiv` overload selects
-a state/province calendar. Discover valid codes with `cal.supported_countries()`
-and `cal.exchanges()`.
+a state/province calendar. Discover valid codes with `cal.supported_countries`
+and `cal.exchanges`.
 
 ### Holidays & business days
 
@@ -149,7 +149,7 @@ SELECT * FROM cal.rrule(
 Trading functions answer "is the market open, and when?" for any of the ~100
 exchanges in [`exchange-calendars`](https://pypi.org/project/exchange-calendars/)
 — NYSE (`XNYS`, the default), Nasdaq (`XNAS`), London (`XLON`), Tokyo (`XTKS`),
-and more (`SELECT * FROM cal.exchanges()`). A **session** is a trading day;
+and more (`SELECT * FROM cal.exchanges`). A **session** is a trading day;
 `market_open` / `market_close` are timezone-aware **UTC** instants, and
 `is_early_close` flags shortened sessions (e.g. the day after US Thanksgiving).
 

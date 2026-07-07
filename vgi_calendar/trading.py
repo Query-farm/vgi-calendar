@@ -7,7 +7,7 @@ unit-tested directly and reused by the Arrow-facing adapters in
 :mod:`vgi_calendar.trading_scalars` and :mod:`vgi_calendar.trading_tables`.
 
 An *exchange* is selected by its ISO-10383 MIC code (default ``"XNYS"`` -- the
-New York Stock Exchange). ``cal.exchanges()`` lists every supported code
+New York Stock Exchange). ``cal.exchanges`` lists every supported code
 (``XNAS`` Nasdaq, ``XLON`` London, ``XTKS`` Tokyo, ...).
 
 A *session* is a trading day. ``market_open`` / ``market_close`` are timezone
@@ -45,7 +45,7 @@ def _calendar(exchange: str) -> _xcals.ExchangeCalendar:
         return _xcals.get_calendar(code)
     except _xcals.errors.InvalidCalendarName as exc:
         raise UnknownExchangeError(
-            f"Unknown exchange calendar {exchange!r}. Call cal.exchanges() for valid codes."
+            f"Unknown exchange calendar {exchange!r}. Call cal.exchanges for valid codes."
         ) from exc
 
 

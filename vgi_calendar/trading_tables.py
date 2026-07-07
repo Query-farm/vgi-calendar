@@ -7,7 +7,7 @@ per-row, single-value trading functions (``is_trading_day``, ``market_open``,
 
     SELECT * FROM cal.trading_sessions(DATE '2026-01-01', DATE '2026-01-31');
     SELECT * FROM cal.trading_schedule(DATE '2026-11-25', DATE '2026-11-30', exchange := 'XNYS');
-    SELECT * FROM cal.exchanges();
+    SELECT * FROM cal.exchanges;
 """
 
 from __future__ import annotations
@@ -82,11 +82,11 @@ class TradingSessionsFunction(TableFunctionGenerator[_TradingSessionsArgs]):
                 "`'XNYS'`, NYSE). Both bounds are inclusive. Use it to expand a range into a "
                 "session series you can join against, count, or window over. Dates outside the "
                 "`exchange-calendars` coverage window simply do not appear. For other markets pass "
-                "`exchange`; see `cal.exchanges()` for MIC codes.",
+                "`exchange`; see `cal.exchanges` for MIC codes.",
                 "## trading_sessions(start, end, exchange := ...)\n\n"
                 "Every **trading session in the inclusive `[start, end]` range**, one per row.\n\n"
                 "Open days only (no weekends/holidays); `exchange` defaults to `'XNYS'`. Expand a "
-                "range into a session series for joins/counts. See `cal.exchanges()`.",
+                "range into a session series for joins/counts. See `cal.exchanges`.",
                 "trading sessions, list sessions, market days, open days, session series, "
                 "trading calendar, nyse sessions, date range",
                 _SRC,
@@ -172,12 +172,12 @@ class TradingScheduleFunction(TableFunctionGenerator[_TradingScheduleArgs]):
                 "the set-returning companion to the scalar `market_open` / `market_close` / "
                 "`is_early_close` functions -- use it to materialize a market-hours table for a "
                 "period (note half-days like the day after Thanksgiving). Sessions outside the "
-                "coverage window are omitted. See `cal.exchanges()` for MIC codes.",
+                "coverage window are omitted. See `cal.exchanges` for MIC codes.",
                 "## trading_schedule(start, end, exchange := ...)\n\n"
                 "Per-session **open / close / early-close schedule** over `[start, end]`.\n\n"
                 "One row per session: `session`, UTC `market_open`/`market_close`, "
                 "`is_early_close`. `exchange` defaults to `'XNYS'`. Materializes a market-hours "
-                "table (half-days flagged). See `cal.exchanges()`.",
+                "table (half-days flagged). See `cal.exchanges`.",
                 "trading schedule, market hours, open close times, session schedule, early close, "
                 "half day, trading hours table, nyse schedule",
                 _SRC,
@@ -223,13 +223,13 @@ class TradingScheduleFunction(TableFunctionGenerator[_TradingScheduleArgs]):
 
 
 # ---------------------------------------------------------------------------
-# exchanges() -> (code)
+# exchanges -> (code)
 # ---------------------------------------------------------------------------
 
 
 @dataclass(kw_only=True)
 class _NoArgs:
-    """``exchanges()`` takes no arguments."""
+    """The scan-backed ``exchanges`` table takes no arguments."""
 
 
 _EXCHANGES_SCHEMA = pa.schema([field("code", pa.string(), "Exchange MIC code (e.g. 'XNYS').", nullable=False)])
@@ -258,7 +258,7 @@ class ExchangesFunction(TableFunctionGenerator[_NoArgs]):
                 "`exchange-calendars` library (e.g. `'XLON'` London, `'XTKS'` Tokyo, `'XNAS'` "
                 "Nasdaq). This is a discovery table -- query or filter it to find the MIC code for "
                 "a market.",
-                "## exchanges()\n\n"
+                "## exchanges\n\n"
                 "Every supported **exchange MIC code**, one per row.\n\n"
                 "These are the valid `exchange` arguments for the trading functions; `'XNYS'` is "
                 "just the default. ~100 calendars (`'XLON'`, `'XTKS'`, `'XNAS'`, ...).",
@@ -268,9 +268,9 @@ class ExchangesFunction(TableFunctionGenerator[_NoArgs]):
             ),
             "vgi.executable_examples": (
                 '[{"description": "List all supported exchange MIC codes.", '
-                '"sql": "SELECT code FROM cal.main.exchanges() ORDER BY code"}, '
+                '"sql": "SELECT code FROM cal.main.exchanges ORDER BY code"}, '
                 '{"description": "Confirm the NYSE (XNYS) calendar is available.", '
-                '"sql": "SELECT count(*) AS n FROM cal.main.exchanges() WHERE code = \'XNYS\'"}]'
+                '"sql": "SELECT count(*) AS n FROM cal.main.exchanges WHERE code = \'XNYS\'"}]'
             ),
             "vgi.result_columns_md": (
                 "| column | type | description |\n"
@@ -280,7 +280,7 @@ class ExchangesFunction(TableFunctionGenerator[_NoArgs]):
         }
         examples = [
             FunctionExample(
-                sql="SELECT * FROM cal.main.exchanges() ORDER BY code",
+                sql="SELECT * FROM cal.main.exchanges ORDER BY code",
                 description="All supported exchange codes",
             ),
         ]
@@ -297,8 +297,10 @@ class ExchangesFunction(TableFunctionGenerator[_NoArgs]):
         out.finish()
 
 
+# NB: ExchangesFunction is intentionally NOT registered as a standalone table
+# function — it backs the scan `Table(name="exchanges", …)` in calendar_worker.py,
+# so the exchange MIC codes are exposed once, as a plain table (no parens).
 TRADING_TABLE_FUNCTIONS: list[type] = [
     TradingSessionsFunction,
     TradingScheduleFunction,
-    ExchangesFunction,
 ]

@@ -66,12 +66,12 @@ class IsTradingDayFunction(ScalarFunction):
             "(exchanges have their own closures), so this is distinct from `is_business_day`. "
             "Returns `BOOLEAN` per row (`NULL` date -> `NULL`); dates outside the "
             "`exchange-calendars` coverage window return `NULL`. For other markets use "
-            "`is_trading_day(date, exchange)`; see `cal.exchanges()` for MIC codes.",
+            "`is_trading_day(date, exchange)`; see `cal.exchanges` for MIC codes.",
             "## is_trading_day(date)\n\n"
             "True if `date` is an **NYSE trading session** (exchange `'XNYS'`).\n\n"
             "Distinct from `is_business_day` -- exchanges have their own holiday calendar. Per-row "
             "`BOOLEAN`; `NULL` outside the calendar window. See the exchange overload and "
-            "`cal.exchanges()`.",
+            "`cal.exchanges`.",
             "is trading day, trading session, market open day, exchange open, nyse session, "
             "stock market open, trading calendar",
             _SRC,
@@ -109,11 +109,11 @@ class IsTradingDayExchangeFunction(ScalarFunction):
             "has its own holiday/weekend calendar via the "
             "`exchange-calendars` library. Returns `BOOLEAN` per row (`NULL` date -> `NULL`); "
             "dates outside the calendar's coverage window return `NULL`. List valid MIC codes with "
-            "`cal.exchanges()`.",
+            "`cal.exchanges`.",
             "## is_trading_day(date[, exchange])\n\n"
             "True if `date` is a **trading session**; `exchange` defaults to `'XNYS'` (MIC code, "
             "e.g. `'XLON'`).\n\n"
-            "Per-row `BOOLEAN`; `NULL` outside the calendar window. See `cal.exchanges()` for "
+            "Per-row `BOOLEAN`; `NULL` outside the calendar window. See `cal.exchanges` for "
             "codes.",
             "is trading day, exchange session, market open, london session, xlon, mic code, stock exchange calendar",
             _SRC,
@@ -165,7 +165,7 @@ class NextTradingDayFunction(ScalarFunction):
             "## next_trading_day(date)\n\n"
             "First **NYSE trading session strictly after** `date` (exchange `'XNYS'`).\n\n"
             "Skips weekends + exchange holidays; never returns `date` itself. Per-row `DATE`. See "
-            "the exchange overload and `cal.exchanges()`.",
+            "the exchange overload and `cal.exchanges`.",
             "next trading day, next session, roll forward, following market day, next open, trading calendar, nyse",
             _SRC,
         )
@@ -201,11 +201,11 @@ class NextTradingDayExchangeFunction(ScalarFunction):
             "for another market. The input "
             "date is never returned; the search skips that exchange's weekends and holidays. "
             "Returns `DATE` per row (`NULL` date -> `NULL`); `NULL` if the result is outside the "
-            "calendar's coverage window. List valid codes with `cal.exchanges()`.",
+            "calendar's coverage window. List valid codes with `cal.exchanges`.",
             "## next_trading_day(date[, exchange])\n\n"
             "First **session strictly after** `date`; `exchange` defaults to `'XNYS'` (e.g. "
             "`'XTKS'`).\n\n"
-            "Skips that exchange's weekends + holidays. Per-row `DATE`. See `cal.exchanges()`.",
+            "Skips that exchange's weekends + holidays. Per-row `DATE`. See `cal.exchanges`.",
             "next trading day, exchange next session, roll forward, tokyo session, xtks, next market open, mic code",
             _SRC,
         )
@@ -294,11 +294,11 @@ class PreviousTradingDayExchangeFunction(ScalarFunction):
             "for another market. The "
             "input date is never returned; the search skips that exchange's weekends and holidays. "
             "Returns `DATE` per row (`NULL` date -> `NULL`); `NULL` if outside the coverage "
-            "window. List valid codes with `cal.exchanges()`.",
+            "window. List valid codes with `cal.exchanges`.",
             "## previous_trading_day(date[, exchange])\n\n"
             "Last **session strictly before** `date`; `exchange` defaults to `'XNYS'` (e.g. "
             "`'XLON'`).\n\n"
-            "Skips that exchange's weekends + holidays. Per-row `DATE`. See `cal.exchanges()`.",
+            "Skips that exchange's weekends + holidays. Per-row `DATE`. See `cal.exchanges`.",
             "previous trading day, exchange prior session, roll back, london session, xlon, "
             "prior market open, mic code",
             _SRC,
@@ -391,12 +391,12 @@ class AddTradingDaysExchangeFunction(ScalarFunction):
             "(e.g. `'XLON'`) for another market. `N` may be negative to step backwards; the result "
             "is always a trading "
             "session. Returns `DATE` per row (`NULL` inputs -> `NULL`); `NULL` if outside the "
-            "calendar's coverage window. List valid codes with `cal.exchanges()`.",
+            "calendar's coverage window. List valid codes with `cal.exchanges`.",
             "## add_trading_days(date, n[, exchange])\n\n"
             "Advance `date` by **`n` trading sessions**; `exchange` defaults to `'XNYS'` (e.g. "
             "`'XLON'`).\n\n"
             "Skips that exchange's non-session days; `n` can be negative. Per-row `DATE`. See "
-            "`cal.exchanges()`.",
+            "`cal.exchanges`.",
             "add trading days, exchange session offset, settlement, london sessions, xlon, advance sessions, mic code",
             _SRC,
         )
@@ -489,12 +489,12 @@ class TradingDaysBetweenExchangeFunction(ScalarFunction):
             "The `exchange` argument is optional and defaults to `'XNYS'` (NYSE); pass a MIC code "
             "(e.g. `'XLON'`) for another market. Returns `INTEGER` per "
             "row (`NULL` if a bound is `NULL`); negative if `end` precedes `start`. List valid "
-            "codes with `cal.exchanges()`.",
+            "codes with `cal.exchanges`.",
             "## trading_days_between(start, end[, exchange])\n\n"
             "Count **trading sessions in `[start, end)`**; `exchange` defaults to `'XNYS'` (e.g. "
             "`'XLON'`).\n\n"
             "Skips that exchange's weekends + holidays; negative if reversed. Per-row `INTEGER`. "
-            "See `cal.exchanges()`.",
+            "See `cal.exchanges`.",
             "trading days between, exchange session count, holding period, london sessions, xlon, "
             "market days, mic code",
             _SRC,
@@ -548,7 +548,7 @@ class MarketOpenFunction(ScalarFunction):
             "`'XNYS'` (NYSE, which opens 14:30 UTC during standard time). The instant is timezone-"
             "aware (UTC) so it compares correctly regardless of the session's local timezone or "
             "DST. Returns `NULL` for non-sessions and for dates outside the calendar's coverage "
-            "window. For other markets use `market_open(date, exchange)`; see `cal.exchanges()`.",
+            "window. For other markets use `market_open(date, exchange)`; see `cal.exchanges`.",
             "## market_open(date)\n\n"
             "**UTC open instant** (`TIMESTAMPTZ`) for an NYSE session, else `NULL`.\n\n"
             "Timezone-aware (UTC), DST-correct. `NULL` for non-sessions / out-of-window dates. See "
@@ -588,11 +588,11 @@ class MarketOpenExchangeFunction(ScalarFunction):
             "and defaults to `'XNYS'` (NYSE); pass a MIC code "
             "(e.g. `'XLON'`) for another market. The instant is timezone-aware (UTC) so it is "
             "directly comparable across exchanges and DST. Returns `NULL` for non-sessions and "
-            "out-of-window dates. List valid codes with `cal.exchanges()`.",
+            "out-of-window dates. List valid codes with `cal.exchanges`.",
             "## market_open(date[, exchange])\n\n"
             "**UTC open instant** (`TIMESTAMPTZ`) for a session, else `NULL`; `exchange` defaults "
             "to `'XNYS'` (e.g. `'XLON'`).\n\n"
-            "Timezone-aware (UTC), DST-correct. See `cal.exchanges()` and `market_close`.",
+            "Timezone-aware (UTC), DST-correct. See `cal.exchanges` and `market_close`.",
             "market open, exchange opening, session open, london open, xlon, trading hours, utc timestamp, mic code",
             _SRC,
         )
@@ -672,11 +672,11 @@ class MarketCloseExchangeFunction(ScalarFunction):
             "(e.g. `'XLON'`) for another market. The close reflects early-close half-days for "
             "that exchange. Timezone-aware (UTC), DST-correct, directly comparable across "
             "exchanges. Returns `NULL` for non-sessions / out-of-window dates. List valid codes "
-            "with `cal.exchanges()`.",
+            "with `cal.exchanges`.",
             "## market_close(date[, exchange])\n\n"
             "**UTC close instant** (`TIMESTAMPTZ`) for a session, else `NULL`; `exchange` defaults "
             "to `'XNYS'` (e.g. `'XLON'`).\n\n"
-            "Reflects that exchange's early closes; timezone-aware (UTC). See `cal.exchanges()` "
+            "Reflects that exchange's early closes; timezone-aware (UTC). See `cal.exchanges` "
             "and `is_early_close`.",
             "market close, exchange closing, session close, early close, london close, xlon, "
             "close time, utc timestamp, mic code",
@@ -766,12 +766,12 @@ class IsEarlyCloseExchangeFunction(ScalarFunction):
             "for another market -- e.g. Christmas Eve "
             "is an early close on the London Stock Exchange. Returns `BOOLEAN` per row: `true` for "
             "shortened sessions, `false` for normal sessions, `NULL` for non-sessions or "
-            "out-of-window dates. List valid codes with `cal.exchanges()`.",
+            "out-of-window dates. List valid codes with `cal.exchanges`.",
             "## is_early_close(date[, exchange])\n\n"
             "True if `date` is an **early-close session**; `exchange` defaults to `'XNYS'` (e.g. "
             "`'XLON'`).\n\n"
             "`false` for normal sessions, `NULL` for non-sessions. Per-row `BOOLEAN`. See "
-            "`cal.exchanges()` and `market_close`.",
+            "`cal.exchanges` and `market_close`.",
             "is early close, half day, exchange early close, shortened session, london half day, "
             "xlon, christmas eve, mic code",
             _SRC,

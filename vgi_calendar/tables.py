@@ -104,13 +104,13 @@ class HolidaysFunction(TableFunctionGenerator[_HolidaysArgs]):
                 "`'US'`) and `subdiv` (state/province) arguments. The `observed` column is `true` "
                 "when the row is an *observed-day shift* -- e.g. a holiday that falls on a weekend "
                 "and is observed on the adjacent weekday. Coverage spans hundreds of countries via "
-                "the `holidays` library; call `cal.supported_countries()` to discover valid "
+                "the `holidays` library; call `cal.supported_countries` to discover valid "
                 "`country`/`subdiv` codes. Use it to build a holiday lookup table, join against "
                 "transactions, or audit a jurisdiction's calendar.",
                 "## holidays(year, country := ..., subdiv := ...)\n\n"
                 "All **public holidays in a year** as `(date, name, observed)` rows.\n\n"
                 "`country` defaults to `'US'`; add `subdiv` for regional holidays. `observed` flags "
-                "weekend-shift observances. See `cal.supported_countries()` for valid codes.",
+                "weekend-shift observances. See `cal.supported_countries` for valid codes.",
                 "holidays, list holidays, holiday calendar, public holidays, bank holidays, "
                 "observed, holiday table, year holidays",
                 _SRC,
@@ -193,7 +193,7 @@ class BusinessDaysFunction(TableFunctionGenerator[_BusinessDaysArgs]):
                 "Both bounds are inclusive. Use it to expand a range into a working-day series you "
                 "can join against, count, or window over (e.g. allocate workload across business "
                 "days). For other jurisdictions pass `country`/`subdiv`; see "
-                "`cal.supported_countries()` for valid codes.",
+                "`cal.supported_countries` for valid codes.",
                 "## business_days(start, end, country := ..., subdiv := ...)\n\n"
                 "Every **business day in the inclusive `[start, end]` range**, one per row.\n\n"
                 "Weekdays minus holidays; both bounds inclusive. `country` defaults to `'US'`. "
@@ -329,7 +329,7 @@ class RruleFunction(TableFunctionGenerator[_RruleArgs]):
 
 @dataclass(kw_only=True)
 class _NoArgs:
-    """``supported_countries()`` takes no arguments."""
+    """The scan-backed ``supported_countries`` table takes no arguments."""
 
 
 _SUPPORTED_COUNTRIES_SCHEMA = pa.schema(
@@ -368,7 +368,7 @@ class SupportedCountriesFunction(TableFunctionGenerator[_NoArgs]):
                 "`NULL` for a country-level entry. Coverage is broad (hundreds of countries plus "
                 "subdivisions); `'US'` is merely the default, not a limit. This is a discovery "
                 "table -- query, filter, or `count` it to explore the supported jurisdictions.",
-                "## supported_countries()\n\n"
+                "## supported_countries\n\n"
                 "Every **`(country, subdivision)`** the holiday functions support.\n\n"
                 "`country` is ISO-3166 alpha-2; `subdivision` is a state/province code or `NULL`. "
                 "Use it to find valid `country`/`subdiv` arguments -- `'US'` is just the default.",
@@ -385,11 +385,11 @@ class SupportedCountriesFunction(TableFunctionGenerator[_NoArgs]):
         }
         examples = [
             FunctionExample(
-                sql="SELECT count(DISTINCT country) FROM cal.main.supported_countries()",
+                sql="SELECT count(DISTINCT country) FROM cal.main.supported_countries",
                 description="How many countries are supported",
             ),
             FunctionExample(
-                sql="SELECT subdivision FROM cal.main.supported_countries() WHERE country = 'DE'",
+                sql="SELECT subdivision FROM cal.main.supported_countries WHERE country = 'DE'",
                 description="German subdivisions (Bundesländer)",
             ),
         ]
@@ -415,9 +415,11 @@ class SupportedCountriesFunction(TableFunctionGenerator[_NoArgs]):
         out.finish()
 
 
+# NB: SupportedCountriesFunction is intentionally NOT registered as a standalone
+# table function — it backs the scan `Table(name="supported_countries", …)` in
+# calendar_worker.py, so the data is exposed once, as a plain table (no parens).
 TABLE_FUNCTIONS: list[type] = [
     HolidaysFunction,
     BusinessDaysFunction,
     RruleFunction,
-    SupportedCountriesFunction,
 ]

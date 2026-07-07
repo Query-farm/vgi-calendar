@@ -237,12 +237,12 @@ class IsHolidayCountryFunction(ScalarFunction):
             "Test whether a date is a **public holiday in a specific country**. Pass an ISO-3166 "
             "alpha-2 country code (e.g. `'GB'`, `'DE'`, `'JP'`) as the second argument; this is the "
             "country overload of `is_holiday`. Returns `BOOLEAN` per row (`NULL` date -> `NULL`). "
-            "Coverage is from the `holidays` library; call `cal.supported_countries()` to discover "
+            "Coverage is from the `holidays` library; call `cal.supported_countries` to discover "
             "valid codes. For a state/province-specific test add a subdivision: "
             "`is_holiday(date, country, subdiv)`. An unknown country code raises a clear error.",
             "## is_holiday(date, country)\n\n"
             "True if `date` is a **public holiday in `country`** (ISO-3166 alpha-2, e.g. `'GB'`).\n\n"
-            "Per-row `BOOLEAN`. See `cal.supported_countries()` for codes and the three-argument "
+            "Per-row `BOOLEAN`. See `cal.supported_countries` for codes and the three-argument "
             "overload for subdivision-level holidays.",
             "is holiday, country holiday, public holiday, iso country, gb holiday, national holiday, bank holiday",
             _SRC,
@@ -281,11 +281,11 @@ class IsHolidaySubdivFunction(ScalarFunction):
             "catches *regional* holidays that the national overload misses -- e.g. Cesar Chavez "
             "Day is observed in California but is not a US-wide federal holiday. Returns `BOOLEAN` "
             "per row (`NULL` date -> `NULL`). Discover valid country/subdivision pairs with "
-            "`cal.supported_countries()`; an unknown code raises a clear error.",
+            "`cal.supported_countries`; an unknown code raises a clear error.",
             "## is_holiday(date, country, subdiv)\n\n"
             "True if `date` is a **holiday in a subdivision** (e.g. `'US','CA'`).\n\n"
             "Catches region-only holidays national tests miss. Per-row `BOOLEAN`; see "
-            "`cal.supported_countries()` for valid `(country, subdiv)` pairs.",
+            "`cal.supported_countries` for valid `(country, subdiv)` pairs.",
             "is holiday, subdivision holiday, state holiday, provincial holiday, regional holiday, "
             "cesar chavez day, california holiday",
             _SRC,
@@ -373,12 +373,12 @@ class HolidayNameCountryFunction(ScalarFunction):
             "Return the **name of the public holiday** on a date for a specific country, or `NULL` "
             "if not a holiday there. Pass an ISO-3166 alpha-2 country code as the second argument "
             "(e.g. `'GB'`, `'FR'`). This is the country overload of `holiday_name`; the result is "
-            "`VARCHAR` per row and is `NULL` for non-holidays. Use `cal.supported_countries()` to "
+            "`VARCHAR` per row and is `NULL` for non-holidays. Use `cal.supported_countries` to "
             "find valid codes, and add a subdivision argument for region-specific holiday names. "
             "An unknown country code raises a clear error.",
             "## holiday_name(date, country)\n\n"
             "**Name** of the holiday on `date` in `country` (e.g. `'GB'`), else `NULL`.\n\n"
-            "Per-row `VARCHAR`. See `cal.supported_countries()` for codes and the subdivision "
+            "Per-row `VARCHAR`. See `cal.supported_countries` for codes and the subdivision "
             "overload for regional names.",
             "holiday name, country holiday name, name of holiday, what holiday, observance, uk holiday name",
             _SRC,
@@ -416,11 +416,11 @@ class HolidayNameSubdivFunction(ScalarFunction):
             "code (e.g. `'US','CA'`). This three-argument overload surfaces *regional* holiday "
             "names the national overload would miss -- e.g. `2026-03-31` in `'US','CA'` is "
             "`'Cesar Chavez Day'`. Result is `VARCHAR` per row, `NULL` for non-holidays. "
-            "Discover valid `(country, subdiv)` pairs via `cal.supported_countries()`.",
+            "Discover valid `(country, subdiv)` pairs via `cal.supported_countries`.",
             "## holiday_name(date, country, subdiv)\n\n"
             "**Name** of the holiday in a subdivision (e.g. `'US','CA'`), else `NULL`.\n\n"
             "Surfaces region-only holiday names. Per-row `VARCHAR`; see "
-            "`cal.supported_countries()` for valid pairs.",
+            "`cal.supported_countries` for valid pairs.",
             "holiday name, subdivision holiday name, state holiday name, regional holiday, "
             "cesar chavez day, california holiday name",
             _SRC,
@@ -510,11 +510,11 @@ class IsBusinessDayCountryFunction(ScalarFunction):
             "that is not a public holiday there. Pass an ISO-3166 alpha-2 country code (e.g. "
             "`'GB'`, `'DE'`) as the second argument. The weekend test is Monday-Friday; the "
             "holiday set is the country's. Returns `BOOLEAN` per row (`NULL` date -> `NULL`). "
-            "Discover codes with `cal.supported_countries()`; add a subdivision for region-aware "
+            "Discover codes with `cal.supported_countries`; add a subdivision for region-aware "
             "business days. An unknown country code raises a clear error.",
             "## is_business_day(date, country)\n\n"
             "True if `date` is a **working day in `country`** (weekday, not a holiday there).\n\n"
-            "Per-row `BOOLEAN`. See `cal.supported_countries()` for codes and the subdivision "
+            "Per-row `BOOLEAN`. See `cal.supported_countries` for codes and the subdivision "
             "overload for regional calendars.",
             "is business day, working day, country business day, banking day, weekday, uk business day, gb working day",
             _SRC,
@@ -552,10 +552,10 @@ class IsBusinessDaySubdivFunction(ScalarFunction):
             "calendar. Pass the ISO-3166 country code plus a subdivision code (e.g. `'US','CA'`). "
             "Regional holidays count: `2026-03-31` is a weekday but, in California, it is Cesar "
             "Chavez Day and so is *not* a business day there. Returns `BOOLEAN` per row (`NULL` "
-            "date -> `NULL`); see `cal.supported_countries()` for valid pairs.",
+            "date -> `NULL`); see `cal.supported_countries` for valid pairs.",
             "## is_business_day(date, country, subdiv)\n\n"
             "True if `date` is a **working day in a subdivision** (e.g. `'US','CA'`).\n\n"
-            "Honours region-only holidays. Per-row `BOOLEAN`; see `cal.supported_countries()` for "
+            "Honours region-only holidays. Per-row `BOOLEAN`; see `cal.supported_countries` for "
             "valid `(country, subdiv)` pairs.",
             "is business day, subdivision business day, state working day, regional holiday, "
             "california business day, banking day",
@@ -651,11 +651,11 @@ class AddBusinessDaysCountryFunction(ScalarFunction):
             "that country's public holidays. Pass an ISO-3166 alpha-2 country code (e.g. `'GB'`) "
             "as the third argument. `N` may be negative to step backwards; the result is always a "
             "business day. Returns `DATE` per row (`NULL` inputs -> `NULL`). Discover codes with "
-            "`cal.supported_countries()`. An unknown country code raises a clear error.",
+            "`cal.supported_countries`. An unknown country code raises a clear error.",
             "## add_business_days(date, n, country)\n\n"
             "Advance `date` by **`n` business days in `country`** (e.g. `'GB'`).\n\n"
             "Skips weekends + that country's holidays; `n` can be negative. Per-row `DATE`. See "
-            "`cal.supported_countries()` for codes.",
+            "`cal.supported_countries` for codes.",
             "add business days, country business days, due date, settlement, working days, "
             "uk business days, banking days",
             _SRC,
@@ -750,11 +750,11 @@ class BusinessDaysBetweenCountryFunction(ScalarFunction):
             "`start` inclusive, `end` exclusive -- skipping weekends and that country's public "
             "holidays. Pass an ISO-3166 alpha-2 country code (e.g. `'GB'`) as the third argument. "
             "Returns `INTEGER` per row (`NULL` if a bound is `NULL`); negative if `end` precedes "
-            "`start`. Discover codes with `cal.supported_countries()`.",
+            "`start`. Discover codes with `cal.supported_countries`.",
             "## business_days_between(start, end, country)\n\n"
             "Count **business days in `[start, end)`** for `country` (e.g. `'GB'`).\n\n"
             "Skips weekends + that country's holidays; negative if reversed. Per-row `INTEGER`. "
-            "See `cal.supported_countries()` for codes.",
+            "See `cal.supported_countries` for codes.",
             "business days between, country business days, working day count, turnaround, "
             "uk business days, banking days, duration",
             _SRC,

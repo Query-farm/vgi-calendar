@@ -28,7 +28,7 @@ Usage:
     SELECT cal.main.is_trading_day(DATE '2026-01-01');             -- false
     SELECT cal.main.market_close(DATE '2026-11-27', 'XNYS');       -- early close
     SELECT * FROM cal.main.trading_schedule(DATE '2026-11-25', DATE '2026-11-30');
-    SELECT * FROM cal.main.exchanges();
+    SELECT * FROM cal.main.exchanges;
 """
 
 from __future__ import annotations
@@ -36,13 +36,13 @@ from __future__ import annotations
 import json
 
 from vgi import Worker
-from vgi.catalog import Catalog, Schema, View
+from vgi.catalog import Catalog, Schema, Table
 
 from vgi_calendar.meta import keywords_array
 from vgi_calendar.scalars import SCALAR_FUNCTIONS
-from vgi_calendar.tables import TABLE_FUNCTIONS
+from vgi_calendar.tables import TABLE_FUNCTIONS, SupportedCountriesFunction
 from vgi_calendar.trading_scalars import TRADING_SCALAR_FUNCTIONS
-from vgi_calendar.trading_tables import TRADING_TABLE_FUNCTIONS
+from vgi_calendar.trading_tables import TRADING_TABLE_FUNCTIONS, ExchangesFunction
 
 _FUNCTIONS: list[type] = [
     *SCALAR_FUNCTIONS,
@@ -84,9 +84,9 @@ _CATEGORY_BY_NAME: dict[str, str] = {
     "is_early_close": "trading",
     "trading_sessions": "trading",
     "trading_schedule": "trading",
-    # Discovery / reference tables
-    "supported_countries": "discovery",
-    "exchanges": "discovery",
+    # NB: `supported_countries` / `exchanges` are scan-backed TABLES (see below),
+    # not functions, so they carry `vgi.category` on the Table directly and are
+    # intentionally absent from this function-name map.
 }
 
 for _fn in _FUNCTIONS:
@@ -186,14 +186,20 @@ _SCHEMA_EXAMPLE_QUERIES = (
     "SELECT * FROM cal.main.trading_schedule(DATE '2026-11-25', DATE '2026-11-30');"
 )
 
-# VGI311 — the parameterless table functions `supported_countries()` and
-# `exchanges()` always return the same rows, so we also expose each as a regular
-# VIEW of the same name. That lets consumers write `SELECT * FROM cal.main.<name>`
-# (no parentheses); the view simply scans the backing table function.
-_SUPPORTED_COUNTRIES_VIEW = View(
+# VGI311 — the `supported_countries` and `exchanges` reference datasets always
+# return the same rows, so we expose each as a regular scan-backed TABLE: the
+# `Table(function=…)` form serves the rows of the backing generator directly,
+# letting consumers write `SELECT * FROM cal.main.<name>` (no parentheses) with
+# no redundant view-over-a-table-function layer (see vgi-lint VGI145).
+_SUPPORTED_COUNTRIES_TABLE = Table(
     name="supported_countries",
-    definition="SELECT country, subdivision FROM cal.main.supported_countries()",
+    function=SupportedCountriesFunction,
     comment="Discovery table of every (country, subdivision) the holiday/business-day functions accept.",
+    # `country` is always populated; `subdivision` is NULL for country-level rows,
+    # so the row identity is the (country, subdivision) pair (UNIQUE, not a PK
+    # since subdivision is nullable).
+    not_null=("country",),
+    unique=(("country", "subdivision"),),
     column_comments={
         "country": "ISO-3166 alpha-2 country code (e.g. 'US', 'GB').",
         "subdivision": "Subdivision / state / province code, or NULL for a country-level entry.",
@@ -206,17 +212,15 @@ _SUPPORTED_COUNTRIES_VIEW = View(
             "holiday and business-day functions support, so you can find the codes to pass as "
             "`country` / `subdiv` to `is_holiday`, `holiday_name`, `is_business_day`, `holidays`, "
             "and friends. `country` is an ISO-3166 alpha-2 code; `subdivision` is a state/province "
-            "code or `NULL` for a country-level entry. This is the no-argument table form of the "
-            "`supported_countries()` table function -- reference it directly by name (no "
+            "code or `NULL` for a country-level entry. Reference it directly by name (no "
             "parentheses) in a `FROM` clause. Coverage is broad "
             "(hundreds of countries plus subdivisions); `'US'` is merely the default, not a limit."
         ),
         "vgi.doc_md": (
-            "## supported_countries (view)\n\n"
+            "## supported_countries (table)\n\n"
             "Every **`(country, subdivision)`** the holiday functions support, as a plain table.\n\n"
-            "`country` is ISO-3166 alpha-2; `subdivision` is a state/province code or `NULL`. The "
-            "no-argument table form of `supported_countries()` -- scan it directly by name (no "
-            "parentheses). Use it to find valid `country`/`subdiv` "
+            "`country` is ISO-3166 alpha-2; `subdivision` is a state/province code or `NULL`. "
+            "Scan it directly by name (no parentheses) to find valid `country`/`subdiv` "
             "arguments; `'US'` is just the default."
         ),
         "vgi.keywords": keywords_array(
@@ -235,10 +239,12 @@ _SUPPORTED_COUNTRIES_VIEW = View(
     },
 )
 
-_EXCHANGES_VIEW = View(
+_EXCHANGES_TABLE = Table(
     name="exchanges",
-    definition="SELECT code FROM cal.main.exchanges()",
+    function=ExchangesFunction,
     comment="Discovery table of every supported stock-exchange trading-calendar MIC code.",
+    # Each MIC code uniquely identifies one exchange calendar -> natural primary key.
+    primary_key=(("code",),),
     column_comments={
         "code": "Exchange MIC code (e.g. 'XNYS' = NYSE, 'XLON' = London).",
     },
@@ -249,18 +255,18 @@ _EXCHANGES_VIEW = View(
             "A ready-to-scan **discovery table** of every supported stock-exchange trading "
             "calendar, one MIC code per row. These are the codes you pass as the `exchange` "
             "argument to the trading functions (`is_trading_day`, `market_open`, "
-            "`trading_schedule`, ...). This is the no-argument table form of the `exchanges()` "
-            "table function -- reference it directly by name (no parentheses) in a `FROM` clause. "
+            "`trading_schedule`, ...). Reference it directly by name (no parentheses) in a "
+            "`FROM` clause. "
             "`'XNYS'` (NYSE) is merely the default; coverage spans roughly a hundred "
             "exchange calendars via `exchange-calendars` (e.g. `'XLON'` London, `'XTKS'` Tokyo, "
             "`'XNAS'` Nasdaq)."
         ),
         "vgi.doc_md": (
-            "## exchanges (view)\n\n"
+            "## exchanges (table)\n\n"
             "Every supported **exchange MIC code**, one per row, as a plain table.\n\n"
             "The valid `exchange` arguments for the trading functions; `'XNYS'` is just the "
-            "default. The no-argument table form of `exchanges()` -- scan it directly by name (no "
-            "parentheses). ~100 calendars (`'XLON'`, `'XTKS'`, `'XNAS'`, ...)."
+            "default. Scan it directly by name (no parentheses). "
+            "~100 calendars (`'XLON'`, `'XTKS'`, `'XNAS'`, ...)."
         ),
         "vgi.keywords": keywords_array(
             "exchanges, list exchanges, mic codes, supported exchanges, trading calendars, "
@@ -422,7 +428,7 @@ _CALENDAR_CATALOG = Catalog(
                 "vgi.doc_md": _SCHEMA_DESCRIPTION_MD,
             },
             functions=list(_FUNCTIONS),
-            views=[_SUPPORTED_COUNTRIES_VIEW, _EXCHANGES_VIEW],
+            tables=[_SUPPORTED_COUNTRIES_TABLE, _EXCHANGES_TABLE],
         ),
     ],
 )
