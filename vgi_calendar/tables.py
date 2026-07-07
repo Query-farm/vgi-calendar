@@ -52,7 +52,12 @@ _HOLIDAYS_EXECUTABLE_EXAMPLES = (
 
 # Common named-argument descriptors. ``subdiv`` defaults to NULL; ``country``
 # to 'US'. Both are optional and named (string position).
-_COUNTRY = Arg[str]("country", default="US", doc="ISO-3166 alpha-2 country code (e.g. 'US', 'GB').")
+_COUNTRY = Arg[str](
+    "country",
+    default="US",
+    doc="ISO-3166 alpha-2 country code (e.g. 'US', 'GB').",
+    choices=core.supported_country_codes(),
+)
 # Explicit ``arrow_type`` so a supplied VARCHAR ``subdiv`` is bound as a string;
 # without it the ``None`` default makes the SDK infer a NULL Arrow type and the
 # cast of a provided value fails (VARCHAR -> NULL). ``None`` still means "no
@@ -62,6 +67,9 @@ _SUBDIV = Arg[str | None](
     default=None,
     arrow_type=pa.string(),
     doc="Optional subdivision / state code (e.g. 'CA', 'NY').",
+    # Union of every subdivision code across all countries (validity is
+    # country-scoped); see cal.supported_countries for valid (country, subdiv) pairs.
+    choices=core.supported_subdivision_codes(),
 )
 
 

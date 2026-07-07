@@ -154,6 +154,25 @@ def supported_countries() -> list[tuple[str, str | None]]:
     return out
 
 
+def supported_country_codes() -> list[str]:
+    """Sorted list of every ``country`` code the holiday functions accept."""
+    return sorted(holidays.list_supported_countries().keys())
+
+
+def supported_subdivision_codes() -> list[str]:
+    """Sorted union of every ``subdiv`` code across all supported countries.
+
+    Subdivision validity is country-scoped -- a given code is only meaningful
+    for the country that defines it -- so this union is the full set of *accepted
+    tokens*, not a per-country whitelist. Use :func:`supported_countries` for the
+    authoritative ``(country, subdivision)`` pairs.
+    """
+    subs: set[str] = set()
+    for subdivs in holidays.list_supported_countries().values():
+        subs.update(subdivs or [])
+    return sorted(subs)
+
+
 def business_days_in_range(
     start: _dt.date, end: _dt.date, country: str = "US", subdiv: str | None = None
 ) -> list[_dt.date]:
