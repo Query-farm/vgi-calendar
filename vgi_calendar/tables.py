@@ -15,6 +15,7 @@ form that accepts DuckDB ``name := value`` arguments (``country``, ``subdiv``,
 from __future__ import annotations
 
 import datetime as _dt
+import json
 from dataclasses import dataclass
 from typing import Annotated, ClassVar
 
@@ -124,22 +125,31 @@ class HolidaysFunction(TableFunctionGenerator[_HolidaysArgs]):
                 _SRC,
             ),
             "vgi.executable_examples": _HOLIDAYS_EXECUTABLE_EXAMPLES,
-            "vgi.result_columns_md": (
-                "| column | type | description |\n"
-                "| --- | --- | --- |\n"
-                "| `date` | DATE | Holiday date. |\n"
-                "| `name` | VARCHAR | Holiday name. |\n"
-                "| `observed` | BOOLEAN | True if this row is an observed-day shift. |\n"
+            # VGI414: the retired free-form `vgi.result_columns_md` is migrated to
+            # the structured `vgi.result_columns_schema` (JSON: name/type/description).
+            "vgi.result_columns_schema": json.dumps(
+                [
+                    {"name": "date", "type": "DATE", "description": "Holiday date."},
+                    {"name": "name", "type": "VARCHAR", "description": "Holiday name."},
+                    {
+                        "name": "observed",
+                        "type": "BOOLEAN",
+                        "description": (
+                            "True if this row is an observed-day shift (e.g. a weekend holiday "
+                            "observed on an adjacent weekday)."
+                        ),
+                    },
+                ]
             ),
         }
         examples = [
             FunctionExample(
-                sql="SELECT * FROM cal.main.holidays(2026, country := 'US')",
-                description="Every US public holiday in 2026",
+                sql="SELECT date, name FROM cal.main.holidays(2026, country := 'US') ORDER BY date",
+                description="Every US public holiday in 2026, as (date, name) ordered by date",
             ),
             FunctionExample(
-                sql="SELECT * FROM cal.main.holidays(2026, country := 'US', subdiv := 'CA')",
-                description="US + California holidays in 2026",
+                sql=("SELECT date, name FROM cal.main.holidays(2026, country := 'US', subdiv := 'CA') ORDER BY date"),
+                description="US + California holidays in 2026, ordered by date",
             ),
         ]
 
@@ -210,16 +220,27 @@ class BusinessDaysFunction(TableFunctionGenerator[_BusinessDaysArgs]):
                 "weekdays excluding holidays, date range",
                 _SRC,
             ),
-            "vgi.result_columns_md": (
-                "| column | type | description |\n"
-                "| --- | --- | --- |\n"
-                "| `date` | DATE | A business day in the range. |\n"
+            # VGI414: migrated from the retired `vgi.result_columns_md` free-form table.
+            "vgi.result_columns_schema": json.dumps(
+                [
+                    {"name": "date", "type": "DATE", "description": "A business day in the range."},
+                ]
             ),
         }
         examples = [
             FunctionExample(
-                sql="SELECT * FROM cal.main.business_days(DATE '2026-12-21', DATE '2026-12-31', country := 'US')",
-                description="Business days over the 2026 year-end week",
+                sql=(
+                    "SELECT count(*) AS business_days "
+                    "FROM cal.main.business_days(DATE '2026-12-21', DATE '2026-12-31', country := 'US')"
+                ),
+                description="How many US business days fall in the 2026 year-end week (Christmas excluded)",
+            ),
+            FunctionExample(
+                sql=(
+                    "SELECT date FROM cal.main.business_days(DATE '2026-12-21', DATE '2026-12-31', "
+                    "country := 'US') ORDER BY date"
+                ),
+                description="The US business days of the 2026 year-end week, in order",
             ),
         ]
 
@@ -291,24 +312,28 @@ class RruleFunction(TableFunctionGenerator[_RruleArgs]):
                 "freq weekly monthly, repeat, ical",
                 _SRC,
             ),
-            "vgi.result_columns_md": (
-                "| column | type | description |\n"
-                "| --- | --- | --- |\n"
-                "| `seq` | BIGINT | 0-based occurrence index. |\n"
-                "| `occurrence` | TIMESTAMP | Occurrence timestamp. |\n"
+            # VGI414: migrated from the retired `vgi.result_columns_md` free-form table.
+            "vgi.result_columns_schema": json.dumps(
+                [
+                    {"name": "seq", "type": "BIGINT", "description": "0-based occurrence index."},
+                    {"name": "occurrence", "type": "TIMESTAMP", "description": "Occurrence timestamp."},
+                ]
             ),
         }
         examples = [
             FunctionExample(
-                sql="SELECT * FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4')",
-                description="The first four weekly occurrences from 2026-01-01",
+                sql=(
+                    "SELECT seq, occurrence "
+                    "FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4') ORDER BY seq"
+                ),
+                description="The first four weekly occurrences from 2026-01-01, indexed and ordered",
             ),
             FunctionExample(
                 sql=(
-                    "SELECT * FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=MONTHLY;BYMONTHDAY=1', "
-                    "until := TIMESTAMP '2026-12-31')"
+                    "SELECT seq, occurrence FROM cal.main.rrule(TIMESTAMP '2026-01-01', "
+                    "'FREQ=MONTHLY;BYMONTHDAY=1', until := TIMESTAMP '2026-12-31') ORDER BY seq"
                 ),
-                description="The first of every month in 2026",
+                description="The first of every month in 2026, as (seq, occurrence) ordered by seq",
             ),
         ]
 
@@ -342,8 +367,13 @@ class _NoArgs:
 
 _SUPPORTED_COUNTRIES_SCHEMA = pa.schema(
     [
-        field("country", pa.string(), "ISO-3166 country code.", nullable=False),
-        field("subdivision", pa.string(), "Subdivision/state code, or NULL.", nullable=True),
+        field("country", pa.string(), "ISO-3166 alpha-2 country code.", nullable=False),
+        field(
+            "subdivision",
+            pa.string(),
+            "Subdivision/state code, or the empty string for a country-level entry.",
+            nullable=False,
+        ),
     ]
 )
 
@@ -372,23 +402,31 @@ class SupportedCountriesFunction(TableFunctionGenerator[_NoArgs]):
                 "List every **`(country, subdivision)` pair the holiday/business-day functions "
                 "support**, so you can discover which codes to pass as `country` / `subdiv` to "
                 "`is_holiday`, `holiday_name`, `is_business_day`, `holidays`, and friends. "
-                "`country` is an ISO-3166 alpha-2 code; `subdivision` is a state/province code or "
-                "`NULL` for a country-level entry. Coverage is broad (hundreds of countries plus "
-                "subdivisions); `'US'` is merely the default, not a limit. This is a discovery "
-                "table -- query, filter, or `count` it to explore the supported jurisdictions.",
+                "`country` is an ISO-3166 alpha-2 code; `subdivision` is a state/province code, or "
+                "the **empty string** for a country-level entry (the holiday functions also accept "
+                "an empty-string `subdiv` as country-level). Coverage is broad (hundreds of "
+                "countries plus subdivisions); `'US'` is merely the default, not a limit. This is a "
+                "discovery table -- query, filter, or `count` it to explore the supported "
+                "jurisdictions.",
                 "## supported_countries\n\n"
                 "Every **`(country, subdivision)`** the holiday functions support.\n\n"
-                "`country` is ISO-3166 alpha-2; `subdivision` is a state/province code or `NULL`. "
-                "Use it to find valid `country`/`subdiv` arguments -- `'US'` is just the default.",
+                "`country` is ISO-3166 alpha-2; `subdivision` is a state/province code, or the "
+                "empty string for a country-level entry. Use it to find valid `country`/`subdiv` "
+                "arguments -- `'US'` is just the default.",
                 "supported countries, list countries, available countries, subdivisions, "
                 "iso-3166, discovery, what countries, jurisdictions",
                 _SRC,
             ),
-            "vgi.result_columns_md": (
-                "| column | type | description |\n"
-                "| --- | --- | --- |\n"
-                "| `country` | VARCHAR | ISO-3166 alpha-2 country code. |\n"
-                "| `subdivision` | VARCHAR | Subdivision / state code, or NULL. |\n"
+            # VGI414: migrated from the retired `vgi.result_columns_md` free-form table.
+            "vgi.result_columns_schema": json.dumps(
+                [
+                    {"name": "country", "type": "VARCHAR", "description": "ISO-3166 alpha-2 country code."},
+                    {
+                        "name": "subdivision",
+                        "type": "VARCHAR",
+                        "description": "Subdivision / state code, or the empty string for a country-level entry.",
+                    },
+                ]
             ),
         }
         examples = [
@@ -415,7 +453,11 @@ class SupportedCountriesFunction(TableFunctionGenerator[_NoArgs]):
             pa.RecordBatch.from_pydict(
                 {
                     "country": [r[0] for r in rows],
-                    "subdivision": [r[1] for r in rows],
+                    # A country-level entry has no subdivision; emit it as the empty
+                    # string (never NULL) so `(country, subdivision)` is a real,
+                    # not-null composite primary key. The holiday functions accept
+                    # an empty-string `subdiv` as country-level too (see core).
+                    "subdivision": [r[1] or "" for r in rows],
                 },
                 schema=params.output_schema,
             )

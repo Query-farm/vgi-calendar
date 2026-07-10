@@ -32,8 +32,12 @@ def _holidays_for(country: str, subdiv: str | None) -> holidays.HolidayBase:
     The instance lazily expands years on demand and caches them internally, so
     repeated membership tests across many dates stay cheap. Wrapped in an LRU so
     a single worker process keeps one calendar object per (country, subdiv).
+
+    An empty-string ``subdiv`` is treated as *no subdivision* (country level),
+    matching how the ``supported_countries`` discovery table represents a
+    country-level entry (empty string, so it can be part of the primary key).
     """
-    return holidays.country_holidays(country.upper(), subdiv=subdiv)
+    return holidays.country_holidays(country.upper(), subdiv=subdiv or None)
 
 
 def is_holiday(date: _dt.date, country: str = "US", subdiv: str | None = None) -> bool:
@@ -126,7 +130,7 @@ def holidays_in_year(year: int, country: str = "US", subdiv: str | None = None) 
     appends ``"(observed)"`` to the name when a holiday falling on a weekend is
     observed on an adjacent weekday).
     """
-    cal = holidays.country_holidays(country.upper(), subdiv=subdiv, years=year, observed=True)
+    cal = holidays.country_holidays(country.upper(), subdiv=subdiv or None, years=year, observed=True)
     rows: list[tuple[_dt.date, str, bool]] = []
     for d, name in cal.items():
         if d.year != year:

@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#     "vgi-python[http]>=0.10.0",
+#     "vgi-python[http]>=0.14.0",
 #     "holidays>=0.50",
 #     "python-dateutil>=2.9",
 # ]
@@ -111,12 +111,9 @@ _CATALOG_DESCRIPTION_MD = (
     "or predicate; set-returning questions — a year's holidays, a range of working days, an "
     "expanded recurrence — are table functions. Country/subdivision are ordinary arguments that "
     "default to `'US'`. List the schema to discover the full surface and each function's "
-    "arguments; a few starting points:\n\n"
-    "```sql\n"
-    "SELECT cal.main.is_holiday(DATE '2026-12-25');\n"
-    "SELECT cal.main.add_business_days(DATE '2026-12-24', 2);\n"
-    "SELECT * FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4');\n"
-    "```"
+    "arguments, and browse the worker's runnable example queries for ready-to-copy starting "
+    "points that cover holiday and business-day tests, business-day arithmetic, calendar labels, "
+    "and recurrence expansion."
 )
 
 _SCHEMA_DESCRIPTION_LLM = (
@@ -168,14 +165,16 @@ _SUPPORTED_COUNTRIES_TABLE = Table(
     name="supported_countries",
     function=SupportedCountriesFunction,
     comment="Discovery table of every (country, subdivision) the holiday/business-day functions accept.",
-    # `country` is always populated; `subdivision` is NULL for country-level rows,
-    # so the row identity is the (country, subdivision) pair (UNIQUE, not a PK
-    # since subdivision is nullable).
-    not_null=("country",),
-    unique=(("country", "subdivision"),),
+    # Row identity is the `(country, subdivision)` pair. A country-level entry
+    # carries an empty-string subdivision (never NULL — see the generator), so
+    # both columns are NOT NULL and the pair is a real composite PRIMARY KEY
+    # (VGI805/VGI807). The holiday functions accept an empty-string `subdiv` as
+    # country-level, so the primary-key value is also a valid argument.
+    not_null=("country", "subdivision"),
+    primary_key=(("country", "subdivision"),),
     column_comments={
         "country": "ISO-3166 alpha-2 country code (e.g. 'US', 'GB').",
-        "subdivision": "Subdivision / state / province code, or NULL for a country-level entry.",
+        "subdivision": "Subdivision / state / province code, or the empty string for a country-level entry.",
     },
     tags={
         "vgi.title": "Supported Countries (table)",
@@ -185,16 +184,16 @@ _SUPPORTED_COUNTRIES_TABLE = Table(
             "holiday and business-day functions support, so you can find the codes to pass as "
             "`country` / `subdiv` to `is_holiday`, `holiday_name`, `is_business_day`, `holidays`, "
             "and friends. `country` is an ISO-3166 alpha-2 code; `subdivision` is a state/province "
-            "code or `NULL` for a country-level entry. Reference it directly by name (no "
-            "parentheses) in a `FROM` clause. Coverage is broad "
+            "code, or the empty string for a country-level entry. Reference it directly by name (no "
+            "parentheses) in a query. Coverage is broad "
             "(hundreds of countries plus subdivisions); `'US'` is merely the default, not a limit."
         ),
         "vgi.doc_md": (
             "## supported_countries (table)\n\n"
             "Every **`(country, subdivision)`** the holiday functions support, as a plain table.\n\n"
-            "`country` is ISO-3166 alpha-2; `subdivision` is a state/province code or `NULL`. "
-            "Scan it directly by name (no parentheses) to find valid `country`/`subdiv` "
-            "arguments; `'US'` is just the default."
+            "`country` is ISO-3166 alpha-2; `subdivision` is a state/province code, or the empty "
+            "string for a country-level entry. Scan it directly by name (no parentheses) to find "
+            "valid `country`/`subdiv` arguments; `'US'` is just the default."
         ),
         "vgi.keywords": keywords_array(
             "supported countries, list countries, available countries, subdivisions, "
@@ -296,6 +295,84 @@ _AGENT_TEST_TASKS = json.dumps(
                 "SELECT seq, occurrence FROM cal.main.rrule(TIMESTAMP '2026-01-01', "
                 "'FREQ=WEEKLY;BYDAY=MO,WE,FR;COUNT=6') ORDER BY seq"
             ),
+            "ignore_column_names": True,
+        },
+        {
+            "name": "is-us-independence-day-a-holiday",
+            "prompt": (
+                "Using the cal calendar worker, is 4 July 2026 a public holiday in the United States "
+                "(country code 'US')? Return a single boolean value."
+            ),
+            "reference_sql": "SELECT cal.main.is_holiday(DATE '2026-07-04') AS is_holiday",
+            "ignore_column_names": True,
+        },
+        {
+            "name": "is-christmas-a-business-day",
+            "prompt": (
+                "Using the cal worker, is 25 December 2026 a US business day — that is, a weekday "
+                "that is not a public holiday? Return a single boolean value."
+            ),
+            "reference_sql": "SELECT cal.main.is_business_day(DATE '2026-12-25') AS is_business_day",
+            "ignore_column_names": True,
+        },
+        {
+            "name": "count-business-days-year-end",
+            "prompt": (
+                "Using the cal worker's business_days_between function, how many US business days "
+                "does it count between 21 December 2026 and 31 December 2026 (its interval is "
+                "start-inclusive, end-exclusive)? Return a single integer."
+            ),
+            "reference_sql": ("SELECT cal.main.business_days_between(DATE '2026-12-21', DATE '2026-12-31') AS n"),
+            "ignore_column_names": True,
+        },
+        {
+            "name": "easter-sunday-2026",
+            "prompt": (
+                "Using the cal worker, on what calendar date does Western (Gregorian) Easter Sunday "
+                "fall in 2026? Return a single date."
+            ),
+            "reference_sql": "SELECT cal.main.easter(2026) AS easter_date",
+            "ignore_column_names": True,
+        },
+        {
+            "name": "iso-week-number",
+            "prompt": (
+                "Using the cal worker, what is the ISO-8601 week number (a value from 1 to 53) that "
+                "contains 22 June 2026? Return a single integer."
+            ),
+            "reference_sql": "SELECT cal.main.iso_week(DATE '2026-06-22') AS week",
+            "ignore_column_names": True,
+        },
+        {
+            "name": "count-us-holidays-2026",
+            "prompt": (
+                "Using the cal worker's holidays table function, how many public-holiday rows does "
+                "it return for the United States (country code 'US') in the calendar year 2026? "
+                "Return a single count."
+            ),
+            "reference_sql": "SELECT count(*) AS n FROM cal.main.holidays(2026, country := 'US')",
+            "ignore_column_names": True,
+        },
+        {
+            "name": "count-business-days-table",
+            "prompt": (
+                "Using the cal worker's business_days table function, how many US business days does "
+                "it enumerate for the inclusive date range 21 December 2026 through 31 December "
+                "2026? Return a single count."
+            ),
+            "reference_sql": (
+                "SELECT count(*) AS n FROM cal.main.business_days(DATE '2026-12-21', "
+                "DATE '2026-12-31', country := 'US')"
+            ),
+            "ignore_column_names": True,
+        },
+        {
+            "name": "count-supported-countries",
+            "prompt": (
+                "Using the cal worker's supported_countries table, how many distinct countries does "
+                "it cover? Return a single count."
+            ),
+            "reference_sql": ("SELECT count(DISTINCT country) AS n FROM cal.main.supported_countries"),
             "ignore_column_names": True,
         },
     ]
