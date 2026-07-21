@@ -34,11 +34,23 @@ dependencies = [
     "pyarrow",
 ]
 
+[project.scripts]
+# Console entry point for the installed wheel: DuckDB can ATTACH a plain
+# `vgi-calendar-worker` command (see bin/vgi-calendar-worker), and the Docker
+# image's stdio transport execs it. Resolves to the same worker as the repo-root
+# PEP-723 script.
+vgi-calendar-worker = "vgi_calendar.worker:main"
+
 [project.optional-dependencies]
 # HTTP transport: the worker can serve over HTTP (`calendar_worker.py --http`)
 # in addition to stdio. That path needs vgi-python's `http` extra (waitress).
 # CI's http transport leg installs this via `uv sync --extra http`.
 http = [
+    "vgi-python[http]>=0.16.0",
+]
+# HTTP-serving extra installed by the Docker image (`pip install '.[serve]'`);
+# alias of `http` so the container can serve `--http` (/health + VGI RPC).
+serve = [
     "vgi-python[http]>=0.16.0",
 ]
 dev = [
