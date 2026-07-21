@@ -63,6 +63,19 @@ SELECT cal.add_business_days(DATE '2026-06-22', 1, 'US');
 ----
 2026-06-23
 
+# Country + subdivision overload: +2 business days from Mon 2026-03-30 in
+# California skips Cesar Chavez Day (Tue 31), landing on Apr 2 instead of Apr 1.
+query I
+SELECT cal.add_business_days(DATE '2026-03-30', 2, 'US', 'CA');
+----
+2026-04-02
+
+# The plain 'US' calendar does not observe Cesar Chavez Day, so it lands a day earlier.
+query I
+SELECT cal.add_business_days(DATE '2026-03-30', 2, 'US');
+----
+2026-04-01
+
 # ---------------------------------------------------------------------------
 # business_days_between scalar — half-open [start, end)
 # ---------------------------------------------------------------------------
@@ -90,6 +103,18 @@ query I
 SELECT cal.business_days_between(DATE '2026-06-22', DATE '2026-06-29', 'US');
 ----
 5
+
+# Country + subdivision overload: California's Cesar Chavez Day (Mar 31) drops
+# March's business-day count from 22 (US) to 21 (US/CA).
+query I
+SELECT cal.business_days_between(DATE '2026-03-01', DATE '2026-04-01', 'US', 'CA');
+----
+21
+
+query I
+SELECT cal.business_days_between(DATE '2026-03-01', DATE '2026-04-01', 'US');
+----
+22
 
 # ---------------------------------------------------------------------------
 # business_days() set-returning range, inclusive [start, end]

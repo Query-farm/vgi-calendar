@@ -690,6 +690,52 @@ class AddBusinessDaysCountryFunction(ScalarFunction):
         return _add_business_days_column(date, n, country=country, subdiv=None)
 
 
+class AddBusinessDaysSubdivFunction(ScalarFunction):
+    """``add_business_days(date, n, country, subdiv)`` -- advance in a subdivision."""
+
+    class Meta:
+        """Function metadata."""
+
+        name = "add_business_days"
+        description = "Advance a date by N business days in a country/subdivision, skipping weekends + holidays"
+        categories = ["calendar", "business-days"]
+        tags = object_tags(
+            "Add Business Days In Subdivision",
+            "Advance a date by **N business days in a country subdivision** "
+            "(state/province/region), skipping weekends and that subdivision's public holidays. "
+            "Pass the ISO-3166 country code plus a subdivision code (e.g. `'US','CA'`) as the third "
+            "and fourth arguments. This four-argument overload honours *regional* holidays the "
+            "national overload would miss -- e.g. advancing across California's Cesar Chavez Day "
+            "skips it, whereas the plain `'US'` calendar does not. `N` may be negative to step "
+            "backwards; the result is always a business day. Returns `DATE` per row (`NULL` inputs "
+            "-> `NULL`). See `cal.supported_countries` for valid `(country, subdiv)` pairs.",
+            "## add_business_days(date, n, country, subdiv)\n\n"
+            "Advance `date` by **`n` business days in a subdivision** (e.g. `'US','CA'`).\n\n"
+            "Skips weekends + that subdivision's holidays; `n` can be negative. Per-row `DATE`. See "
+            "`cal.supported_countries` for valid `(country, subdiv)` pairs.",
+            "add business days, subdivision business days, state working days, regional holiday, "
+            "california business days, due date, settlement, banking days",
+            _SRC,
+        )
+        examples = [
+            FunctionExample(
+                sql="SELECT cal.main.add_business_days(DATE '2026-03-30', 2, 'US', 'CA')",
+                description="Two California business days after 2026-03-30 (skips Cesar Chavez Day)",
+            ),
+        ]
+
+    @classmethod
+    def compute(
+        cls,
+        date: Annotated[pa.Date32Array, Param(doc="Calendar day to advance from.")],
+        n: Annotated[pa.Int32Array, Param(doc="Business days to add (negative goes backwards).")],
+        country: Annotated[str, ConstParam(_COUNTRY_DOC, choices=_COUNTRY_CHOICES)],
+        subdiv: Annotated[str, ConstParam(_SUBDIV_DOC, choices=_SUBDIV_CHOICES)],
+    ) -> Annotated[pa.Date32Array, Returns()]:
+        """Compute the result column for each input row."""
+        return _add_business_days_column(date, n, country=country, subdiv=subdiv)
+
+
 # ---------------------------------------------------------------------------
 # business_days_between(start, end[, country[, subdiv]]) -- per-row overloads.
 # ---------------------------------------------------------------------------
@@ -789,6 +835,51 @@ class BusinessDaysBetweenCountryFunction(ScalarFunction):
         return _business_days_between_column(start, end, country=country, subdiv=None)
 
 
+class BusinessDaysBetweenSubdivFunction(ScalarFunction):
+    """``business_days_between(start, end, country, subdiv)`` -- count in a subdivision."""
+
+    class Meta:
+        """Function metadata."""
+
+        name = "business_days_between"
+        description = "Count business days in [start, end) for a country/subdivision (start inclusive)"
+        categories = ["calendar", "business-days"]
+        tags = object_tags(
+            "Count Business Days Between In Subdivision",
+            "Count the number of **business days in `[start, end)` for a country subdivision** "
+            "(state/province/region) -- `start` inclusive, `end` exclusive -- skipping weekends and "
+            "that subdivision's public holidays. Pass the ISO-3166 country code plus a subdivision "
+            "code (e.g. `'US','CA'`) as the third and fourth arguments. This four-argument overload "
+            "honours *regional* holidays the national overload would miss. Returns `INTEGER` per "
+            "row (`NULL` if a bound is `NULL`); negative if `end` precedes `start`. See "
+            "`cal.supported_countries` for valid `(country, subdiv)` pairs.",
+            "## business_days_between(start, end, country, subdiv)\n\n"
+            "Count **business days in `[start, end)`** for a subdivision (e.g. `'US','CA'`).\n\n"
+            "Skips weekends + that subdivision's holidays; negative if reversed. Per-row `INTEGER`. "
+            "See `cal.supported_countries` for valid `(country, subdiv)` pairs.",
+            "business days between, subdivision business days, state working day count, "
+            "regional holiday, california business days, turnaround, banking days",
+            _SRC,
+        )
+        examples = [
+            FunctionExample(
+                sql="SELECT cal.main.business_days_between(DATE '2026-03-01', DATE '2026-04-01', 'US', 'CA')",
+                description="California business days in March 2026 (excludes Cesar Chavez Day)",
+            ),
+        ]
+
+    @classmethod
+    def compute(
+        cls,
+        start: Annotated[pa.Date32Array, Param(doc="Inclusive lower bound of the span to count over.")],
+        end: Annotated[pa.Date32Array, Param(doc="Exclusive upper bound of the span to count over.")],
+        country: Annotated[str, ConstParam(_COUNTRY_DOC, choices=_COUNTRY_CHOICES)],
+        subdiv: Annotated[str, ConstParam(_SUBDIV_DOC, choices=_SUBDIV_CHOICES)],
+    ) -> Annotated[pa.Int32Array, Returns()]:
+        """Compute the result column for each input row."""
+        return _business_days_between_column(start, end, country=country, subdiv=subdiv)
+
+
 SCALAR_FUNCTIONS: list[type] = [
     EasterFunction,
     IsoWeekFunction,
@@ -804,6 +895,8 @@ SCALAR_FUNCTIONS: list[type] = [
     IsBusinessDaySubdivFunction,
     AddBusinessDaysFunction,
     AddBusinessDaysCountryFunction,
+    AddBusinessDaysSubdivFunction,
     BusinessDaysBetweenFunction,
     BusinessDaysBetweenCountryFunction,
+    BusinessDaysBetweenSubdivFunction,
 ]

@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#     "vgi-python[http]>=0.14.0",
+#     "vgi-python[http]>=0.16.0",
 #     "holidays>=0.50",
 #     "python-dateutil>=2.9",
 # ]
@@ -74,6 +74,36 @@ for _fn in _FUNCTIONS:
     _meta = _fn.Meta  # type: ignore[attr-defined]  # every registered function class defines Meta
     _meta.tags = {**dict(_meta.tags), "vgi.category": _CATEGORY_BY_NAME[_meta.name]}
 
+# VGI515 — every function/schema example query must carry a description. The
+# `Meta.examples` list already pairs each SQL with a description, but the VGI
+# extension surfaces those into the *native* `duckdb_functions().examples`
+# column as bare SQL strings (the description is dropped on that carrier), so the
+# linter sees an undescribed example. Re-emit the same (description, sql) pairs
+# through the `vgi.example_queries` tag — the described carrier — so the merge
+# keeps the description. Scalars resolve by arity, so several overload classes
+# share one function *name*; aggregate their examples by name (deduped by SQL)
+# and stamp every overload with the full described set, matching how the native
+# examples column aggregates the overloads' `Meta.examples`.
+_EXAMPLES_BY_NAME: dict[str, list[dict[str, str]]] = {}
+_SEEN_SQL_BY_NAME: dict[str, set[str]] = {}
+for _fn in _FUNCTIONS:
+    _meta = _fn.Meta  # type: ignore[attr-defined]
+    _bucket = _EXAMPLES_BY_NAME.setdefault(_meta.name, [])
+    _seen = _SEEN_SQL_BY_NAME.setdefault(_meta.name, set())
+    for _ex in getattr(_meta, "examples", []):
+        _key = " ".join((_ex.sql or "").split()).lower()
+        if _key in _seen:
+            continue
+        _seen.add(_key)
+        _bucket.append({"description": _ex.description, "sql": _ex.sql})
+
+for _fn in _FUNCTIONS:
+    _meta = _fn.Meta  # type: ignore[attr-defined]
+    _meta.tags = {
+        **dict(_meta.tags),
+        "vgi.example_queries": json.dumps(_EXAMPLES_BY_NAME[_meta.name]),
+    }
+
 _CATALOG_DESCRIPTION_LLM = (
     "Calendar math for SQL: test whether a date is a public holiday or business day and name the "
     "holiday (hundreds of countries and subdivisions via the `holidays` library), advance dates by "
@@ -110,10 +140,9 @@ _CATALOG_DESCRIPTION_MD = (
     "Per-row questions are answered by scalar functions you can drop straight into a projection "
     "or predicate; set-returning questions — a year's holidays, a range of working days, an "
     "expanded recurrence — are table functions. Country/subdivision are ordinary arguments that "
-    "default to `'US'`. List the schema to discover the full surface and each function's "
-    "arguments, and browse the worker's runnable example queries for ready-to-copy starting "
-    "points that cover holiday and business-day tests, business-day arithmetic, calendar labels, "
-    "and recurrence expansion."
+    "default to `'US'`; the `supported_countries` table enumerates every valid `country`/`subdiv` "
+    "code. Weekend-aware `is_business_day` differs from holiday-only `is_holiday`; recurrence "
+    "rules must be bounded (`COUNT`/`UNTIL`) or they never terminate."
 )
 
 _SCHEMA_DESCRIPTION_LLM = (
@@ -136,24 +165,68 @@ _SCHEMA_DESCRIPTION_MD = (
     "**When to use it**\n\n"
     "Reach for this schema for holiday and business-day date math (settlement, SLA, payroll, "
     "billing), calendar labels (Easter, ISO week / year-week), and RFC-5545 recurrence expansion. "
-    "List the schema to discover the functions and their arguments."
+    "The `supported_countries` table enumerates the valid `country`/`subdiv` codes those functions "
+    "accept."
 )
 
-# VGI506 — representative, catalog-qualified example queries for the schema.
-# Every reference is fully qualified (`cal.main.<fn>`) so each line executes as
-# written against the attached worker.
-_SCHEMA_EXAMPLE_QUERIES = (
-    "SELECT cal.main.is_holiday(DATE '2026-12-25');\n"
-    "SELECT cal.main.holiday_name(DATE '2026-07-04');\n"
-    "SELECT cal.main.is_business_day(DATE '2026-12-25');\n"
-    "SELECT cal.main.add_business_days(DATE '2026-12-24', 2);\n"
-    "SELECT cal.main.business_days_between(DATE '2026-01-01', DATE '2026-02-01');\n"
-    "SELECT cal.main.easter(2026);\n"
-    "SELECT cal.main.iso_year_week(DATE '2026-06-22');\n"
-    "SELECT * FROM cal.main.holidays(2026, country := 'US', subdiv := 'CA');\n"
-    "SELECT * FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4');\n"
-    "SELECT * FROM cal.main.business_days(DATE '2026-12-21', DATE '2026-12-31');\n"
-    "SELECT * FROM cal.main.supported_countries ORDER BY country;"
+# VGI506 / VGI515 — representative, catalog-qualified example queries for the
+# schema, each carrying a human-readable description. Every reference is fully
+# qualified (`cal.main.<fn>`) so each query executes as written against the
+# attached worker, and the set spans the whole surface (holiday / business-day /
+# recurrence / calendar-label scalars and table functions plus the discovery
+# table).
+_SCHEMA_EXAMPLE_QUERIES = json.dumps(
+    [
+        {
+            "description": "Is Christmas 2026 a US public holiday?",
+            "sql": "SELECT cal.main.is_holiday(DATE '2026-12-25') AS is_holiday",
+        },
+        {
+            "description": "Name of the US holiday on 4 July 2026.",
+            "sql": "SELECT cal.main.holiday_name(DATE '2026-07-04') AS holiday_name",
+        },
+        {
+            "description": "Is Christmas 2026 a US business day?",
+            "sql": "SELECT cal.main.is_business_day(DATE '2026-12-25') AS is_business_day",
+        },
+        {
+            "description": "Two US business days after 24 December 2026 (skips Christmas + weekend).",
+            "sql": "SELECT cal.main.add_business_days(DATE '2026-12-24', 2) AS due",
+        },
+        {
+            "description": "How many US business days fall in January 2026.",
+            "sql": "SELECT cal.main.business_days_between(DATE '2026-01-01', DATE '2026-02-01') AS n",
+        },
+        {
+            "description": "Western Easter Sunday in 2026.",
+            "sql": "SELECT cal.main.easter(2026) AS easter_sunday",
+        },
+        {
+            "description": "ISO-8601 year-week label for 22 June 2026.",
+            "sql": "SELECT cal.main.iso_year_week(DATE '2026-06-22') AS iso_year_week",
+        },
+        {
+            "description": "US + California public holidays in 2026, projected and ordered.",
+            "sql": ("SELECT date, name FROM cal.main.holidays(2026, country := 'US', subdiv := 'CA') ORDER BY date"),
+        },
+        {
+            "description": "The first four weekly occurrences from 1 January 2026.",
+            "sql": (
+                "SELECT seq, occurrence FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4') ORDER BY seq"
+            ),
+        },
+        {
+            "description": "US business days in the 2026 year-end week, in order.",
+            "sql": (
+                "SELECT date FROM cal.main.business_days(DATE '2026-12-21', DATE '2026-12-31', "
+                "country := 'US') ORDER BY date"
+            ),
+        },
+        {
+            "description": "How many distinct countries the holiday functions support.",
+            "sql": "SELECT count(DISTINCT country) AS countries FROM cal.main.supported_countries",
+        },
+    ]
 )
 
 # VGI311 — the `supported_countries` reference dataset always returns the same

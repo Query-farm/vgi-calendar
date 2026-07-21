@@ -75,9 +75,14 @@ jobs:
       - name: Docstring lint (pydoclint)
         run: uvx pydoclint --config pyproject.toml vgi_calendar/ calendar_worker.py
 
-  # Metadata-quality gate: build the worker, then run the vgi-lint catalog
-  # linter against the live `uv run calendar_worker.py` LOCATION and fail on any
+  # Metadata-quality gate: build the worker into a project venv, then run the
+  # vgi-lint catalog linter against that venv's python LOCATION and fail on any
   # finding (info and up). Kept a separate job so the lint score is visible.
+  # NB: lint against `.venv/bin/python calendar_worker.py`, NOT `uv run
+  # calendar_worker.py` — the PEP-723 script env `uv run` builds is resolved and
+  # cached independently of the locked venv and can serve a stale SDK that emits
+  # the old catalog schema, producing a false schema-mismatch. The venv python
+  # runs the exact locked vgi-python the rest of CI installs.
   metadata-quality:
     name: Metadata quality (vgi-lint)
     runs-on: ubuntu-latest
@@ -96,8 +101,9 @@ jobs:
       - name: vgi-lint
         uses: Query-farm/vgi-lint-check@v1
         with:
-          location: "uv run --python 3.13 ${{ github.workspace }}/calendar_worker.py"
+          location: "${{ github.workspace }}/.venv/bin/python ${{ github.workspace }}/calendar_worker.py"
           fail-on: info
+          version: ">=0.73.0"
 
   # Resolve the latest published haybarn release once, so the whole matrix tests
   # the same version (and we never hardcode/pin it).

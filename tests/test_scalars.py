@@ -108,6 +108,22 @@ class TestAddBusinessDays:
         out = _scalar(client, "add_business_days", batch, positional=[pa.scalar("US")])
         assert out == [dt.date(2026, 6, 23)]
 
+    def test_four_args_subdiv(self, client: Client) -> None:
+        # +2 business days from Mon 2026-03-30. In plain US the next two working
+        # days are Tue 31 + Wed 1 -> Apr 1; in California Tue 31 is Cesar Chavez
+        # Day, so the count skips it -> Apr 2. The subdivision overload must honour
+        # the regional holiday the country overload misses.
+        batch = pa.RecordBatch.from_pydict(
+            {
+                "d": pa.array([dt.date(2026, 3, 30)], type=pa.date32()),
+                "n": pa.array([2], type=pa.int32()),
+            }
+        )
+        assert _scalar(client, "add_business_days", batch, positional=[pa.scalar("US")]) == [dt.date(2026, 4, 1)]
+        assert _scalar(client, "add_business_days", batch, positional=[pa.scalar("US"), pa.scalar("CA")]) == [
+            dt.date(2026, 4, 2)
+        ]
+
 
 class TestBusinessDaysBetween:
     def test_two_args(self, client: Client) -> None:
@@ -119,3 +135,15 @@ class TestBusinessDaysBetween:
         )
         out = _scalar(client, "business_days_between", batch)
         assert out == [5]
+
+    def test_four_args_subdiv(self, client: Client) -> None:
+        # March 2026 has 22 US business days; California loses Cesar Chavez Day
+        # (Mar 31), so its count is 21. Exercises the country/subdivision overload.
+        batch = pa.RecordBatch.from_pydict(
+            {
+                "s": pa.array([dt.date(2026, 3, 1)], type=pa.date32()),
+                "e": pa.array([dt.date(2026, 4, 1)], type=pa.date32()),
+            }
+        )
+        assert _scalar(client, "business_days_between", batch, positional=[pa.scalar("US")]) == [22]
+        assert _scalar(client, "business_days_between", batch, positional=[pa.scalar("US"), pa.scalar("CA")]) == [21]
