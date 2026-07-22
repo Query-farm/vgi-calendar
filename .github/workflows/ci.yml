@@ -105,7 +105,6 @@ jobs:
         with:
           location: "${{ github.workspace }}/.venv/bin/python ${{ github.workspace }}/calendar_worker.py"
           fail-on: info
-          version: ">=0.73.0"
 
   # Resolve the latest published haybarn release once, so the whole matrix tests
   # the same version (and we never hardcode/pin it).
