@@ -317,9 +317,11 @@ _EXECUTABLE_EXAMPLES = json.dumps(
 )
 
 # VGI152 — the fixed agent-suitability task suite used by `vgi-lint simulate`.
-# Each task's `prompt` is all the analyst sees; `reference_sql` is grader-only
-# and must be deterministic. Chosen to exercise the main surface (holiday /
-# business-day / recurrence scalars + table functions).
+# Each task's `prompt` is all the analyst sees. VGI416: the grader-only fields
+# (`reference_sql`, `ignore_column_names`) live in the private
+# `vgi-agent-tests.yaml` sidecar at the repo root, never in metadata. Chosen to
+# exercise the main surface (holiday / business-day / recurrence scalars + table
+# functions).
 _AGENT_TEST_TASKS = json.dumps(
     [
         {
@@ -329,8 +331,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "after 25 November 2026? Business days exclude weekends and US public holidays "
                 "(note US Thanksgiving falls in that week). Return a single date."
             ),
-            "reference_sql": "SELECT cal.main.add_business_days(DATE '2026-11-25', 5) AS result",
-            "ignore_column_names": True,
         },
         {
             "name": "iso-year-week-label",
@@ -338,8 +338,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "Using the cal worker, what is the ISO 8601 year-week label (ISO year and week "
                 "number) for 22 June 2026? Return the single label value."
             ),
-            "reference_sql": "SELECT cal.main.iso_year_week(DATE '2026-06-22') AS iso_year_week",
-            "ignore_column_names": True,
         },
         {
             "name": "japan-golden-week-holiday-name",
@@ -347,8 +345,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "Using the cal worker, what is the name of the public holiday in Japan (country "
                 "code 'JP') on 4 May 2026? Return the single holiday name."
             ),
-            "reference_sql": "SELECT cal.main.holiday_name(DATE '2026-05-04', 'JP') AS name",
-            "ignore_column_names": True,
         },
         {
             "name": "mon-wed-fri-recurrence",
@@ -358,11 +354,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "1 January 2026. Return the sequence index and occurrence timestamp, ordered by "
                 "sequence."
             ),
-            "reference_sql": (
-                "SELECT seq, occurrence FROM cal.main.rrule(TIMESTAMP '2026-01-01', "
-                "'FREQ=WEEKLY;BYDAY=MO,WE,FR;COUNT=6') ORDER BY seq"
-            ),
-            "ignore_column_names": True,
         },
         {
             "name": "is-us-independence-day-a-holiday",
@@ -370,8 +361,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "Using the cal calendar worker, is 4 July 2026 a public holiday in the United States "
                 "(country code 'US')? Return a single boolean value."
             ),
-            "reference_sql": "SELECT cal.main.is_holiday(DATE '2026-07-04') AS is_holiday",
-            "ignore_column_names": True,
         },
         {
             "name": "is-christmas-a-business-day",
@@ -379,8 +368,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "Using the cal worker, is 25 December 2026 a US business day — that is, a weekday "
                 "that is not a public holiday? Return a single boolean value."
             ),
-            "reference_sql": "SELECT cal.main.is_business_day(DATE '2026-12-25') AS is_business_day",
-            "ignore_column_names": True,
         },
         {
             "name": "count-business-days-year-end",
@@ -389,8 +376,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "does it count between 21 December 2026 and 31 December 2026 (its interval is "
                 "start-inclusive, end-exclusive)? Return a single integer."
             ),
-            "reference_sql": ("SELECT cal.main.business_days_between(DATE '2026-12-21', DATE '2026-12-31') AS n"),
-            "ignore_column_names": True,
         },
         {
             "name": "easter-sunday-2026",
@@ -398,8 +383,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "Using the cal worker, on what calendar date does Western (Gregorian) Easter Sunday "
                 "fall in 2026? Return a single date."
             ),
-            "reference_sql": "SELECT cal.main.easter(2026) AS easter_date",
-            "ignore_column_names": True,
         },
         {
             "name": "iso-week-number",
@@ -407,8 +390,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "Using the cal worker, what is the ISO-8601 week number (a value from 1 to 53) that "
                 "contains 22 June 2026? Return a single integer."
             ),
-            "reference_sql": "SELECT cal.main.iso_week(DATE '2026-06-22') AS week",
-            "ignore_column_names": True,
         },
         {
             "name": "count-us-holidays-2026",
@@ -417,8 +398,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "it return for the United States (country code 'US') in the calendar year 2026? "
                 "Return a single count."
             ),
-            "reference_sql": "SELECT count(*) AS n FROM cal.main.holidays(2026, country := 'US')",
-            "ignore_column_names": True,
         },
         {
             "name": "count-business-days-table",
@@ -427,11 +406,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "it enumerate for the inclusive date range 21 December 2026 through 31 December "
                 "2026? Return a single count."
             ),
-            "reference_sql": (
-                "SELECT count(*) AS n FROM cal.main.business_days(DATE '2026-12-21', "
-                "DATE '2026-12-31', country := 'US')"
-            ),
-            "ignore_column_names": True,
         },
         {
             "name": "count-supported-countries",
@@ -439,8 +413,6 @@ _AGENT_TEST_TASKS = json.dumps(
                 "Using the cal worker's supported_countries table, how many distinct countries does "
                 "it cover? Return a single count."
             ),
-            "reference_sql": ("SELECT count(DISTINCT country) AS n FROM cal.main.supported_countries"),
-            "ignore_column_names": True,
         },
     ]
 )
@@ -470,7 +442,7 @@ _CALENDAR_CATALOG = Catalog(
     source_url="https://github.com/Query-farm/vgi-calendar",
     schemas=[
         Schema(
-            name="main",
+            path=["main"],
             comment="Holiday, business-day, and recurrence functions plus the supported-countries table",
             tags={
                 "vgi.title": "Calendar — main",

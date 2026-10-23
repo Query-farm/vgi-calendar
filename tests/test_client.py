@@ -30,6 +30,7 @@ def test_easter_scalar(client: Client) -> None:
     results = list(
         client.scalar_function(
             function_name="easter",
+            schema_path=["main"],
             input=iter([batch]),
             arguments=Arguments(positional=()),
         )
@@ -42,6 +43,7 @@ def test_iso_year_week_scalar(client: Client) -> None:
     results = list(
         client.scalar_function(
             function_name="iso_year_week",
+            schema_path=["main"],
             input=iter([batch]),
             arguments=Arguments(positional=()),
         )
@@ -53,6 +55,7 @@ def test_holidays_table_function(client: Client) -> None:
     results = list(
         client.table_function(
             function_name="holidays",
+            schema_path=["main"],
             arguments=Arguments(
                 positional=(pa.scalar(2026, type=pa.int32()),),
                 named={"country": pa.scalar("US")},

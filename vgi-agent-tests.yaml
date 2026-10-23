@@ -1,0 +1,40 @@
+# Private graders for `vgi-lint simulate` (VGI416). The worker publishes only
+# task names and prompts in vgi.agent_test_tasks; these canonical solutions stay
+# in the repo and are never exposed in catalog metadata.
+tasks:
+  - name: add-five-business-days
+    reference_sql: "SELECT cal.main.add_business_days(DATE '2026-11-25', 5) AS result"
+    ignore_column_names: true
+  - name: iso-year-week-label
+    reference_sql: "SELECT cal.main.iso_year_week(DATE '2026-06-22') AS iso_year_week"
+    ignore_column_names: true
+  - name: japan-golden-week-holiday-name
+    reference_sql: "SELECT cal.main.holiday_name(DATE '2026-05-04', 'JP') AS name"
+    ignore_column_names: true
+  - name: mon-wed-fri-recurrence
+    reference_sql: "SELECT seq, occurrence FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;BYDAY=MO,WE,FR;COUNT=6') ORDER BY seq"
+    ignore_column_names: true
+  - name: is-us-independence-day-a-holiday
+    reference_sql: "SELECT cal.main.is_holiday(DATE '2026-07-04') AS is_holiday"
+    ignore_column_names: true
+  - name: is-christmas-a-business-day
+    reference_sql: "SELECT cal.main.is_business_day(DATE '2026-12-25') AS is_business_day"
+    ignore_column_names: true
+  - name: count-business-days-year-end
+    reference_sql: "SELECT cal.main.business_days_between(DATE '2026-12-21', DATE '2026-12-31') AS n"
+    ignore_column_names: true
+  - name: easter-sunday-2026
+    reference_sql: "SELECT cal.main.easter(2026) AS easter_date"
+    ignore_column_names: true
+  - name: iso-week-number
+    reference_sql: "SELECT cal.main.iso_week(DATE '2026-06-22') AS week"
+    ignore_column_names: true
+  - name: count-us-holidays-2026
+    reference_sql: "SELECT count(*) AS n FROM cal.main.holidays(2026, country := 'US')"
+    ignore_column_names: true
+  - name: count-business-days-table
+    reference_sql: "SELECT count(*) AS n FROM cal.main.business_days(DATE '2026-12-21', DATE '2026-12-31', country := 'US')"
+    ignore_column_names: true
+  - name: count-supported-countries
+    reference_sql: "SELECT count(DISTINCT country) AS n FROM cal.main.supported_countries"
+    ignore_column_names: true
