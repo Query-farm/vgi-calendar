@@ -84,8 +84,10 @@ uv run ruff check . && uv run mypy vgi_calendar/
 
 `make test-sql` sets `VGI_CALENDAR_WORKER="uv run --python 3.13
 calendar_worker.py"`, puts `~/.local/bin` on PATH, and runs `haybarn-unittest
---test-dir . "test/sql/*"`. Install the runner once with
-`uv tool install haybarn-unittest`. **The SQL suite is authoritative** — unit
+--keep-home --test-dir . "test/sql/*"`. Install the runner once with
+`uv tool install --prerelease allow 'haybarn-unittest>=2.0.0rc11,<2.1'` (haybarn 2.0:
+only its community `vgi` extension speaks the worker's VGI protocol vgi.v3 /
+3.1). **The SQL suite is authoritative** — unit
 tests call functions directly and can pass while the RPC path is broken (that's
 how edge #1 hid). CI (`.github/workflows/ci.yml`) runs unit + lint + a gated
 `e2e` job that installs haybarn-unittest and runs `make test-sql`.

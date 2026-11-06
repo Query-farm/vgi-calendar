@@ -8,7 +8,7 @@ statement ok
 LOAD vgi;
 
 statement ok
-ATTACH 'cal' AS cal (TYPE vgi, LOCATION '${VGI_CALENDAR_WORKER}');
+ATTACH 'cal' AS cal (TYPE vgi, LOCATION '{VGI_CALENDAR_WORKER}');
 
 # ---------------------------------------------------------------------------
 # is_business_day scalar — weekends and holidays are not business days

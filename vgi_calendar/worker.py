@@ -24,7 +24,7 @@ from __future__ import annotations
 import json
 
 from vgi import Worker
-from vgi.catalog import Catalog, Schema, Table
+from vgi.catalog import Catalog, Schema, Table, constraint_record
 
 from vgi_calendar.meta import keywords_array
 from vgi_calendar.scalars import SCALAR_FUNCTIONS
@@ -234,9 +234,26 @@ _SUPPORTED_COUNTRIES_TABLE = Table(
     # carries an empty-string subdivision (never NULL — see the generator), so
     # both columns are NOT NULL and the pair is a real composite PRIMARY KEY
     # (VGI805/VGI807). The holiday functions accept an empty-string `subdiv` as
-    # country-level, so the primary-key value is also a valid argument.
-    not_null=("country", "subdivision"),
-    primary_key=(("country", "subdivision"),),
+    # country-level, so the primary-key value is also a valid argument. Under
+    # vgi.v3 these are canonical ENFORCED + ALL_ROWS records. The PRIMARY_KEY
+    # already implies NOT NULL; the explicit NOT_NULL records keep that visible
+    # to catalog consumers that only read NOT NULL constraints (vgi-lint VGI804).
+    constraints=tuple(
+        constraint_record(
+            ["main"],
+            "supported_countries",
+            constraint_id,
+            kind,
+            columns,
+            enforcement="ENFORCED",
+            validation="ALL_ROWS",
+        )
+        for constraint_id, kind, columns in (
+            ("pk", "PRIMARY_KEY", [["country"], ["subdivision"]]),
+            ("country_not_null", "NOT_NULL", [["country"]]),
+            ("subdivision_not_null", "NOT_NULL", [["subdivision"]]),
+        )
+    ),
     column_comments={
         "country": "ISO-3166 alpha-2 country code (e.g. 'US', 'GB').",
         "subdivision": "Subdivision / state / province code, or the empty string for a country-level entry.",
