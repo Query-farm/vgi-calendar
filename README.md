@@ -18,7 +18,7 @@ Easter from [`python-dateutil`](https://pypi.org/project/python-dateutil/).
 
 ```sql
 INSTALL vgi FROM community; LOAD vgi;
-ATTACH 'cal' (TYPE vgi, LOCATION 'uv run calendar_worker.py');
+ATTACH 'cal' (TYPE vgi, LOCATION 'uvx --from git+https://github.com/Query-farm/vgi-calendar@v0.2.0 vgi-calendar-worker');
 
 SELECT cal.easter(2026);                                  -- DATE 2026-04-05
 SELECT cal.iso_year_week(DATE '2026-06-22');              -- '2026-W26'
@@ -36,6 +36,39 @@ SELECT * FROM cal.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4');
 > hours, early closes)? Those live in the companion
 > [vgi-trading-calendar](https://github.com/Query-farm/vgi-trading-calendar)
 > worker.
+
+## Quick start
+
+The worker isn't on PyPI; [uv](https://docs.astral.sh/uv/) runs it straight from a tagged release on GitHub. `uvx` builds an isolated environment on the first ATTACH and reuses it afterwards:
+
+```sql
+INSTALL vgi FROM community;
+LOAD vgi;
+
+ATTACH 'cal' AS cal (TYPE vgi, LOCATION 'uvx --from git+https://github.com/Query-farm/vgi-calendar@v0.2.0 vgi-calendar-worker');
+
+-- Whether 25 December 2026 is a US public holiday.
+SELECT cal.main.is_holiday(DATE '2026-12-25') AS is_holiday;
+
+-- Two US business days after 24 December 2026 (skips Christmas + weekend).
+SELECT cal.main.add_business_days(DATE '2026-12-24', 2) AS due;
+```
+
+Change `@v0.2.0` to move to a newer release.
+
+### Other ways to run it
+
+- **Docker** (the image bundles the worker and its dependencies):
+
+  ```sql
+  ATTACH 'cal' AS cal (TYPE vgi, LOCATION 'docker://ghcr.io/query-farm/vgi-calendar:0.2.0');
+  ```
+
+- **From a local checkout** (`git clone https://github.com/Query-farm/vgi-calendar`), point `LOCATION` at `uv run --project /path/to/vgi-calendar vgi-calendar-worker`.
+
+### Build from source
+
+To build the worker yourself, see [Local development](#local-development).
 
 ## Scalars (per-row) vs. table functions (set-returning)
 
