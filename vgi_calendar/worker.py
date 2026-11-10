@@ -259,7 +259,7 @@ _SUPPORTED_COUNTRIES_TABLE = Table(
         "subdivision": "Subdivision / state / province code, or the empty string for a country-level entry.",
     },
     tags={
-        "vgi.title": "Supported Countries (table)",
+        "vgi.title": "Holiday Coverage",
         "vgi.category": "discovery",
         "vgi.doc_llm": (
             "A ready-to-scan **discovery table** of every `(country, subdivision)` pair the "
@@ -440,7 +440,11 @@ _CALENDAR_CATALOG = Catalog(
     default_schema="main",
     comment="Holiday, business-day, and recurrence calendar math for SQL",
     tags={
-        "vgi.title": "Calendar, Holiday & Recurrence Math",
+        "vgi.title": "Calendar Math",
+        "vgi.subtitle": (
+            "Public holidays and business days for hundreds of countries, "
+            "plus Easter, ISO weeks, and RRULE recurrences."
+        ),
         "vgi.keywords": keywords_array(
             "calendar, holiday, public holiday, business day, working day, banking day, "
             "easter, iso week, year-week, recurrence, rrule, rfc-5545, "
@@ -462,7 +466,7 @@ _CALENDAR_CATALOG = Catalog(
             path=["main"],
             comment="Holiday, business-day, and recurrence functions plus the supported-countries table",
             tags={
-                "vgi.title": "Calendar — main",
+                "vgi.title": "Calendar Functions",
                 "vgi.keywords": keywords_array(
                     "holiday, business day, easter, iso week, year-week, recurrence, rrule, "
                     "holidays, business days, supported countries"
