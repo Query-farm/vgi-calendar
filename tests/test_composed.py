@@ -93,3 +93,13 @@ def test_grader_answers_are_not_published() -> None:
     published = _published_sql()
     for name, sql in _graders().items():
         assert _norm(sql) not in published, name
+
+
+def test_composed_sql_test_tracks_the_published_queries() -> None:
+    # test/sql/composed.test pins each query's rows with a verbatim copy of its SQL;
+    # fail if a query in composed.py or a composed grader changes without that copy.
+    sql_test = (_REPO / "test" / "sql" / "composed.test").read_text()
+    for ex in COMPOSED_EXAMPLES:
+        assert f"{ex.sql};" in sql_test, ex.name
+    for name in ("payroll-last-business-day-2026", "us-holidays-on-uk-business-days-2026"):
+        assert f"{_graders()[name]};" in sql_test, name

@@ -227,7 +227,7 @@ uv sync --all-extras     # create .venv with vgi-python + holidays + dateutil + 
 make test                # pytest (unit + integration) + SQL end-to-end
 make test-unit           # pytest only
 make test-sql            # DuckDB sqllogictest files via haybarn-unittest
-make lint                # ruff format --check, ruff check, mypy
+make lint                # ruff format --check, ruff check, mypy, pydoclint (as CI)
 ```
 
 `tests/test_core.py` covers the pure date math (including error / edge cases and
