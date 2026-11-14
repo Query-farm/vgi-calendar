@@ -1,0 +1,263 @@
+{
+  "schema_version": 1,
+  "repository": "Query-farm/vgi-calendar",
+  "revision": "d2fd23768e4c555b320daef4dd97cdd87b2dff49",
+  "captured_at": "2026-11-14T20:45:41.952567+00:00",
+  "default_schema": "main",
+  "scope": "all_public_functions_and_tables",
+  "complete": true,
+  "objects": [
+    {
+      "schema": "main",
+      "name": "add_business_days",
+      "kind": "function",
+      "signatures": [
+        "add_business_days(DATE, INTEGER) -> DATE"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "add_business_days",
+      "kind": "function",
+      "signatures": [
+        "add_business_days(DATE, INTEGER, VARCHAR) -> DATE"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "add_business_days",
+      "kind": "function",
+      "signatures": [
+        "add_business_days(DATE, INTEGER, VARCHAR, VARCHAR) -> DATE"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "business_days",
+      "kind": "function",
+      "signatures": [
+        "business_days(DATE, DATE, VARCHAR, VARCHAR) -> None"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "business_days_between",
+      "kind": "function",
+      "signatures": [
+        "business_days_between(DATE, DATE) -> INTEGER"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "business_days_between",
+      "kind": "function",
+      "signatures": [
+        "business_days_between(DATE, DATE, VARCHAR) -> INTEGER"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "business_days_between",
+      "kind": "function",
+      "signatures": [
+        "business_days_between(DATE, DATE, VARCHAR, VARCHAR) -> INTEGER"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "easter",
+      "kind": "function",
+      "signatures": [
+        "easter(BIGINT) -> DATE"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "holiday_name",
+      "kind": "function",
+      "signatures": [
+        "holiday_name(DATE) -> VARCHAR"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "holiday_name",
+      "kind": "function",
+      "signatures": [
+        "holiday_name(DATE, VARCHAR) -> VARCHAR"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "holiday_name",
+      "kind": "function",
+      "signatures": [
+        "holiday_name(DATE, VARCHAR, VARCHAR) -> VARCHAR"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "holidays",
+      "kind": "function",
+      "signatures": [
+        "holidays(BIGINT, VARCHAR, VARCHAR) -> None"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "is_business_day",
+      "kind": "function",
+      "signatures": [
+        "is_business_day(DATE) -> BOOLEAN"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "is_business_day",
+      "kind": "function",
+      "signatures": [
+        "is_business_day(DATE, VARCHAR) -> BOOLEAN"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "is_business_day",
+      "kind": "function",
+      "signatures": [
+        "is_business_day(DATE, VARCHAR, VARCHAR) -> BOOLEAN"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "is_holiday",
+      "kind": "function",
+      "signatures": [
+        "is_holiday(DATE) -> BOOLEAN"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "is_holiday",
+      "kind": "function",
+      "signatures": [
+        "is_holiday(DATE, VARCHAR) -> BOOLEAN"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "is_holiday",
+      "kind": "function",
+      "signatures": [
+        "is_holiday(DATE, VARCHAR, VARCHAR) -> BOOLEAN"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "iso_week",
+      "kind": "function",
+      "signatures": [
+        "iso_week(DATE) -> INTEGER"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "iso_year_week",
+      "kind": "function",
+      "signatures": [
+        "iso_year_week(DATE) -> VARCHAR"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "rrule",
+      "kind": "function",
+      "signatures": [
+        "rrule(TIMESTAMP, VARCHAR, TIMESTAMP, INTEGER) -> None"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "supported_countries",
+      "kind": "table",
+      "signatures": [
+        "TABLE"
+      ],
+      "authentication": "none",
+      "access": "read"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "coverage/current-vgi_calendar-worker.py",
+      "sha256": "433efb1264a647d906691f6a32d892cec70ee78777fac1432c812e5c37e24453",
+      "description": "Reviewed current source; byte-identical to releasev0.5.0"
+    },
+    {
+      "path": "coverage/current-vgi_calendar-scalars.py",
+      "sha256": "d1ee20a15c9ae432d923b2ec9c4535c01863774d8c18376eff925405a2df8188",
+      "description": "Reviewed current source; byte-identical to releasev0.5.0"
+    },
+    {
+      "path": "coverage/current-vgi_calendar-tables.py",
+      "sha256": "0e046f691d4939c7dec9ff8a0ebf6d3e52cd9909d8e95b961e684767c9c3316d",
+      "description": "Reviewed current source; byte-identical to releasev0.5.0"
+    },
+    {
+      "path": "coverage/current-vgi_calendar-core.py",
+      "sha256": "0bac287915efc09222a137a04813ed48f8abd05dba1577782ff6205c27b3046b",
+      "description": "Reviewed current source; byte-identical to releasev0.5.0"
+    },
+    {
+      "path": "coverage/current-pyproject.toml",
+      "sha256": "afbb027fdd26cc663d9b8103751227de3710d31504bae726a2396c478c5639b9",
+      "description": "Reviewed current source; byte-identical to releasev0.5.0"
+    },
+    {
+      "path": "coverage/current-uv.lock",
+      "sha256": "4ab5e795515fd12b6f3c3531411fce7832efd71c71419aeadddd1fa2350a9f59",
+      "description": "Reviewed current source; byte-identical to releasev0.5.0"
+    }
+  ]
+}

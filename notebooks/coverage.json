@@ -1,0 +1,346 @@
+{
+  "schema_version": 1,
+  "catalogs": {
+    "released": {
+      "path": "coverage/catalog-release.json",
+      "sha256": "e695fa1c6a9c52590c777cf20ae3f9940e6768baa43855dccff934c951f83709",
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root",
+        "reviewed_at": "2026-11-14T20:55:39.600793+00:00",
+        "catalog_sha256": "e695fa1c6a9c52590c777cf20ae3f9940e6768baa43855dccff934c951f83709",
+        "notes": "Complete actual v0.5.0 functions/tables/views export:12 logical names after grouping overloads and same-name supported_countries aliases. No capability exclusions."
+      }
+    },
+    "current": {
+      "path": "coverage/catalog-current.json",
+      "sha256": "626136855bb05e1b52fcb3f68f5c93abfd555575c3c8be74dd2e955614aab1db",
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root",
+        "reviewed_at": "2026-11-14T20:55:39.600793+00:00",
+        "catalog_sha256": "626136855bb05e1b52fcb3f68f5c93abfd555575c3c8be74dd2e955614aab1db",
+        "notes": "All12 current registrations, overloads, table and column schemas reconciled. Entire implementation and root dependencies byte-identical to v0.5.0; current revisiond2fd23768e4c555b320daef4dd97cdd87b2dff49. Current binary not separately built/run."
+      }
+    }
+  },
+  "notebooks": [
+    {
+      "path": "01_same_lead_time_different_dates.ipynb",
+      "sha256": "5123c2d69b0c1a835a6cd7d77d09c9c5c1f03c05a67c4ba4b79ba19c5ea90b3a",
+      "execution": {
+        "path": "coverage/run-01.json",
+        "sha256": "c9799c146f87c4e68318bc5a0aa4f5e162ebf8bbf8b807dcb6825802ee8da347"
+      }
+    }
+  ],
+  "examples": [
+    {
+      "object": {
+        "schema": "main",
+        "name": "supported_countries"
+      },
+      "notebook": "01_same_lead_time_different_dates.ipynb",
+      "sql": [
+        {
+          "cell": "7529c191",
+          "reference": "cal.main.supported_countries"
+        }
+      ],
+      "narrative_cells": [
+        "615ba0a4"
+      ],
+      "result_cells": [
+        "7529c191",
+        "e8d6ad93"
+      ],
+      "interpretation_cells": [
+        "615ba0a4",
+        "c40df051"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root",
+        "reviewed_at": "2026-11-14T20:55:39.600793+00:00",
+        "notebook_sha256": "5123c2d69b0c1a835a6cd7d77d09c9c5c1f03c05a67c4ba4b79ba19c5ea90b3a",
+        "catalog_sha256": [
+          "e695fa1c6a9c52590c777cf20ae3f9940e6768baa43855dccff934c951f83709",
+          "626136855bb05e1b52fcb3f68f5c93abfd555575c3c8be74dd2e955614aab1db"
+        ],
+        "purpose": "Discover the exact regional codes used for the service-date comparison.",
+        "finding": "Returned US/NY,GB/ENG,DE/BY pairs drive the three explicit regional SQL branches. Public holiday coverage is distinguished from carrier and stock-exchange schedules."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "rrule"
+      },
+      "notebook": "01_same_lead_time_different_dates.ipynb",
+      "sql": [
+        {
+          "cell": "9d4ba4d9",
+          "reference": "cal.main.rrule"
+        }
+      ],
+      "narrative_cells": [
+        "928f9ead"
+      ],
+      "result_cells": [
+        "9d4ba4d9",
+        "549a6137"
+      ],
+      "interpretation_cells": [
+        "928f9ead",
+        "e6893dd8"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root",
+        "reviewed_at": "2026-11-14T20:55:39.600793+00:00",
+        "notebook_sha256": "5123c2d69b0c1a835a6cd7d77d09c9c5c1f03c05a67c4ba4b79ba19c5ea90b3a",
+        "catalog_sha256": [
+          "e695fa1c6a9c52590c777cf20ae3f9940e6768baa43855dccff934c951f83709",
+          "626136855bb05e1b52fcb3f68f5c93abfd555575c3c8be74dd2e955614aab1db"
+        ],
+        "purpose": "Generate one shared, bounded weekday request schedule independent of holidays.",
+        "finding": "Nine civil-date requests21\u201331December2026 include public holidays. Recurrence does not perform holiday exclusion; later dispatch policy explicitly rolls closed requests forward."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "is_business_day"
+      },
+      "notebook": "01_same_lead_time_different_dates.ipynb",
+      "sql": [
+        {
+          "cell": "c7d3b3bb",
+          "reference": "cal.main.is_business_day"
+        },
+        {
+          "cell": "776c1dcf",
+          "reference": "cal.main.is_business_day"
+        },
+        {
+          "cell": "38e86338",
+          "reference": "cal.main.is_business_day"
+        }
+      ],
+      "narrative_cells": [
+        "c40df051",
+        "e6893dd8"
+      ],
+      "result_cells": [
+        "e8d6ad93",
+        "549a6137",
+        "763cdb43"
+      ],
+      "interpretation_cells": [
+        "e6893dd8",
+        "549a6137",
+        "763cdb43"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root",
+        "reviewed_at": "2026-11-14T20:55:39.600793+00:00",
+        "notebook_sha256": "5123c2d69b0c1a835a6cd7d77d09c9c5c1f03c05a67c4ba4b79ba19c5ea90b3a",
+        "catalog_sha256": [
+          "e695fa1c6a9c52590c777cf20ae3f9940e6768baa43855dccff934c951f83709",
+          "626136855bb05e1b52fcb3f68f5c93abfd555575c3c8be74dd2e955614aab1db"
+        ],
+        "purpose": "Distinguish available dates and apply the dispatch adjustment before counting service days.",
+        "finding": "All27 regional request rows retain identity and have available dispatch/delivery endpoints. The complete availability map exactly matches separately enumerated business dates. Availability and dispatches stay fixed under the lead-time experiment."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "is_holiday"
+      },
+      "notebook": "01_same_lead_time_different_dates.ipynb",
+      "sql": [
+        {
+          "cell": "c7d3b3bb",
+          "reference": "cal.main.is_holiday"
+        }
+      ],
+      "narrative_cells": [
+        "c40df051"
+      ],
+      "result_cells": [
+        "c7d3b3bb",
+        "e8d6ad93"
+      ],
+      "interpretation_cells": [
+        "c40df051",
+        "3903d9fa",
+        "2dad5d61"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root",
+        "reviewed_at": "2026-11-14T20:55:39.600793+00:00",
+        "notebook_sha256": "5123c2d69b0c1a835a6cd7d77d09c9c5c1f03c05a67c4ba4b79ba19c5ea90b3a",
+        "catalog_sha256": [
+          "e695fa1c6a9c52590c777cf20ae3f9940e6768baa43855dccff934c951f83709",
+          "626136855bb05e1b52fcb3f68f5c93abfd555575c3c8be74dd2e955614aab1db"
+        ],
+        "purpose": "Separate holiday closure from the ordinary weekend rule.",
+        "finding": "The chart gives holidays display priority while keeping weekend/holiday flags separate. England has an observed Boxing Day closure; Bavaria has Epiphany. Changing service lead time leaves this reference population unchanged."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "holiday_name"
+      },
+      "notebook": "01_same_lead_time_different_dates.ipynb",
+      "sql": [
+        {
+          "cell": "c7d3b3bb",
+          "reference": "cal.main.holiday_name"
+        }
+      ],
+      "narrative_cells": [
+        "c40df051"
+      ],
+      "result_cells": [
+        "c7d3b3bb",
+        "e8d6ad93"
+      ],
+      "interpretation_cells": [
+        "c40df051",
+        "e6c09e22",
+        "2dad5d61"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root",
+        "reviewed_at": "2026-11-14T20:55:39.600793+00:00",
+        "notebook_sha256": "5123c2d69b0c1a835a6cd7d77d09c9c5c1f03c05a67c4ba4b79ba19c5ea90b3a",
+        "catalog_sha256": [
+          "e695fa1c6a9c52590c777cf20ae3f9940e6768baa43855dccff934c951f83709",
+          "626136855bb05e1b52fcb3f68f5c93abfd555575c3c8be74dd2e955614aab1db"
+        ],
+        "purpose": "Explain regional closure dates using their actual library-provided labels.",
+        "finding": "The visible holiday table names each closure and preserves weekend overlap. Readers can relate observed Boxing Day/Epiphany dates to elapsed-time differences without attributing them to measured shipping performance."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "add_business_days"
+      },
+      "notebook": "01_same_lead_time_different_dates.ipynb",
+      "sql": [
+        {
+          "cell": "776c1dcf",
+          "reference": "cal.main.add_business_days"
+        }
+      ],
+      "narrative_cells": [
+        "e6893dd8",
+        "3903d9fa"
+      ],
+      "result_cells": [
+        "776c1dcf",
+        "549a6137",
+        "c25a569d",
+        "e6c09e22"
+      ],
+      "interpretation_cells": [
+        "e6893dd8",
+        "549a6137",
+        "e6c09e22",
+        "2dad5d61"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root",
+        "reviewed_at": "2026-11-14T20:55:39.600793+00:00",
+        "notebook_sha256": "5123c2d69b0c1a835a6cd7d77d09c9c5c1f03c05a67c4ba4b79ba19c5ea90b3a",
+        "catalog_sha256": [
+          "e695fa1c6a9c52590c777cf20ae3f9940e6768baa43855dccff934c951f83709",
+          "626136855bb05e1b52fcb3f68f5c93abfd555575c3c8be74dd2e955614aab1db"
+        ],
+        "purpose": "Implement explicit next-available dispatch and count business days strictly after dispatch.",
+        "finding": "The zero-day no-roll behavior is explained, avoiding accidental closed dispatches. The default two-day service reaches05January for the final request; increasing tofive keeps dispatches fixed while moving deliveries later, with regional calendar differences retained."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "business_days"
+      },
+      "notebook": "01_same_lead_time_different_dates.ipynb",
+      "sql": [
+        {
+          "cell": "service-day-enumeration",
+          "reference": "cal.main.business_days"
+        }
+      ],
+      "narrative_cells": [
+        "c381ca35"
+      ],
+      "result_cells": [
+        "service-day-interpretation",
+        "763cdb43"
+      ],
+      "interpretation_cells": [
+        "service-day-interpretation",
+        "763cdb43",
+        "2dad5d61"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root",
+        "reviewed_at": "2026-11-14T20:55:39.600793+00:00",
+        "notebook_sha256": "5123c2d69b0c1a835a6cd7d77d09c9c5c1f03c05a67c4ba4b79ba19c5ea90b3a",
+        "catalog_sha256": [
+          "e695fa1c6a9c52590c777cf20ae3f9940e6768baa43855dccff934c951f83709",
+          "626136855bb05e1b52fcb3f68f5c93abfd555575c3c8be74dd2e955614aab1db"
+        ],
+        "purpose": "Enumerate actual service dates and reconcile them against scalar day counting.",
+        "finding": "Three inclusive date inventories are joined with dispatch<date<=delivery. Final-request lists contain exactly the chosen number of dates; checks reconcile all27 requests and bidirectional EXCEPT proves inventory equality with scalar availability across the full modeled calendar."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "business_days_between"
+      },
+      "notebook": "01_same_lead_time_different_dates.ipynb",
+      "sql": [
+        {
+          "cell": "38e86338",
+          "reference": "cal.main.business_days_between"
+        }
+      ],
+      "narrative_cells": [
+        "c381ca35"
+      ],
+      "result_cells": [
+        "763cdb43",
+        "service-day-interpretation"
+      ],
+      "interpretation_cells": [
+        "c381ca35",
+        "763cdb43"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root",
+        "reviewed_at": "2026-11-14T20:55:39.600793+00:00",
+        "notebook_sha256": "5123c2d69b0c1a835a6cd7d77d09c9c5c1f03c05a67c4ba4b79ba19c5ea90b3a",
+        "catalog_sha256": [
+          "e695fa1c6a9c52590c777cf20ae3f9940e6768baa43855dccff934c951f83709",
+          "626136855bb05e1b52fcb3f68f5c93abfd555575c3c8be74dd2e955614aab1db"
+        ],
+        "purpose": "Reconcile the half-open counting convention with an inclusive delivery endpoint.",
+        "finding": "Using dispatch+1 and delivery+1 counts exactly the selected service days while excluding dispatch. The scalar count and explicit lists agree for all27 rows in both parameter settings."
+      }
+    }
+  ]
+}

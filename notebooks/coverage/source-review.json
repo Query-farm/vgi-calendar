@@ -1,0 +1,8 @@
+{
+  "current_revision": "d2fd23768e4c555b320daef4dd97cdd87b2dff49",
+  "released_revision": "v0.5.0",
+  "current_exact_runtime_count": 0,
+  "source_ci": 43555025168,
+  "basis": "Entire vgi_calendar source tree, root dependency manifest and lock are byte-identical to v0.5.0. Actual released schemas reconcile every registration, overload and supported_countries view/table. Current runtime not separately executed.",
+  "all_named_capabilities_included": true
+}

@@ -1,0 +1,910 @@
+{
+  "query": "SELECT * FROM duckdb_functions() WHERE database_name='cal' ORDER BY schema_name,function_name",
+  "columns": [
+    "database_name",
+    "database_oid",
+    "schema_name",
+    "function_name",
+    "alias_of",
+    "function_type",
+    "description",
+    "comment",
+    "tags",
+    "return_type",
+    "parameters",
+    "parameter_types",
+    "varargs",
+    "macro_definition",
+    "has_side_effects",
+    "internal",
+    "extension_name",
+    "function_oid",
+    "examples",
+    "stability",
+    "categories"
+  ],
+  "rows": [
+    [
+      "cal",
+      "22592",
+      "main",
+      "add_business_days",
+      null,
+      "scalar",
+      "Advance a date by N business days, skipping weekends + holidays (country 'US')",
+      null,
+      {
+        "vgi.category": "business-days",
+        "vgi.doc_llm": "Advance a date by **N business days in a country subdivision** (state/province/region), skipping weekends and that subdivision's public holidays. Pass the ISO-3166 country code plus a subdivision code (e.g. `'US','CA'`) as the third and fourth arguments. This four-argument overload honours *regional* holidays the national overload would miss -- e.g. advancing across California's Cesar Chavez Day skips it, whereas the plain `'US'` calendar does not. `N` may be negative to step backwards; the result is always a business day. Returns `DATE` per row (`NULL` inputs -> `NULL`). See `cal.supported_countries` for valid `(country, subdiv)` pairs.",
+        "vgi.doc_md": "## add_business_days(date, n, country, subdiv)\n\nAdvance `date` by **`n` business days in a subdivision** (e.g. `'US','CA'`).\n\nSkips weekends + that subdivision's holidays; `n` can be negative. Per-row `DATE`. See `cal.supported_countries` for valid `(country, subdiv)` pairs.",
+        "vgi.example_queries": "[{\"description\": \"Two business days after 2026-12-24 (skips Christmas + weekend)\", \"sql\": \"SELECT cal.main.add_business_days(DATE '2026-12-24', 2)\"}, {\"description\": \"Two UK business days after 2026-12-24\", \"sql\": \"SELECT cal.main.add_business_days(DATE '2026-12-24', 2, 'GB')\"}, {\"description\": \"Two California business days after 2026-03-30 (skips Cesar Chavez Day)\", \"sql\": \"SELECT cal.main.add_business_days(DATE '2026-03-30', 2, 'US', 'CA')\"}, {\"description\": \"Payment calendar: 1st-of-month 2026 payments from rrule, rolled forward to the next US business day when the 1st is not one, with the reason: the holiday name, or the weekday for weekend rolls.\", \"sql\": \"WITH sched AS (SELECT r.seq, CAST(r.occurrence AS DATE) AS due FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=MONTHLY;BYMONTHDAY=1;COUNT=12') AS r) SELECT due, CASE WHEN cal.main.is_business_day(due) THEN due ELSE cal.main.add_business_days(due, 1) END AS settles_on, CASE WHEN NOT cal.main.is_business_day(due) THEN coalesce(cal.main.holiday_name(due), dayname(due)) END AS rolled_because FROM sched ORDER BY seq\"}]",
+        "vgi.keywords": "[\"add business days\", \"subdivision business days\", \"state working days\", \"regional holiday\", \"california business days\", \"due date\", \"settlement\", \"banking days\"]",
+        "vgi.title": "Add Business Days In Subdivision"
+      },
+      "DATE",
+      [
+        "date",
+        "n"
+      ],
+      [
+        "DATE",
+        "INTEGER"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22596,
+      [
+        "SELECT cal.main.add_business_days(DATE '2026-12-24', 2)"
+      ],
+      "CONSISTENT",
+      [
+        "calendar",
+        "business-days"
+      ]
+    ],
+    [
+      "cal",
+      "22592",
+      "main",
+      "add_business_days",
+      null,
+      "scalar",
+      "Advance a date by N business days in a country, skipping weekends + holidays",
+      null,
+      {
+        "vgi.category": "business-days",
+        "vgi.doc_llm": "Advance a date by **N business days in a country subdivision** (state/province/region), skipping weekends and that subdivision's public holidays. Pass the ISO-3166 country code plus a subdivision code (e.g. `'US','CA'`) as the third and fourth arguments. This four-argument overload honours *regional* holidays the national overload would miss -- e.g. advancing across California's Cesar Chavez Day skips it, whereas the plain `'US'` calendar does not. `N` may be negative to step backwards; the result is always a business day. Returns `DATE` per row (`NULL` inputs -> `NULL`). See `cal.supported_countries` for valid `(country, subdiv)` pairs.",
+        "vgi.doc_md": "## add_business_days(date, n, country, subdiv)\n\nAdvance `date` by **`n` business days in a subdivision** (e.g. `'US','CA'`).\n\nSkips weekends + that subdivision's holidays; `n` can be negative. Per-row `DATE`. See `cal.supported_countries` for valid `(country, subdiv)` pairs.",
+        "vgi.example_queries": "[{\"description\": \"Two business days after 2026-12-24 (skips Christmas + weekend)\", \"sql\": \"SELECT cal.main.add_business_days(DATE '2026-12-24', 2)\"}, {\"description\": \"Two UK business days after 2026-12-24\", \"sql\": \"SELECT cal.main.add_business_days(DATE '2026-12-24', 2, 'GB')\"}, {\"description\": \"Two California business days after 2026-03-30 (skips Cesar Chavez Day)\", \"sql\": \"SELECT cal.main.add_business_days(DATE '2026-03-30', 2, 'US', 'CA')\"}, {\"description\": \"Payment calendar: 1st-of-month 2026 payments from rrule, rolled forward to the next US business day when the 1st is not one, with the reason: the holiday name, or the weekday for weekend rolls.\", \"sql\": \"WITH sched AS (SELECT r.seq, CAST(r.occurrence AS DATE) AS due FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=MONTHLY;BYMONTHDAY=1;COUNT=12') AS r) SELECT due, CASE WHEN cal.main.is_business_day(due) THEN due ELSE cal.main.add_business_days(due, 1) END AS settles_on, CASE WHEN NOT cal.main.is_business_day(due) THEN coalesce(cal.main.holiday_name(due), dayname(due)) END AS rolled_because FROM sched ORDER BY seq\"}]",
+        "vgi.keywords": "[\"add business days\", \"subdivision business days\", \"state working days\", \"regional holiday\", \"california business days\", \"due date\", \"settlement\", \"banking days\"]",
+        "vgi.title": "Add Business Days In Subdivision"
+      },
+      "DATE",
+      [
+        "date",
+        "n",
+        "country"
+      ],
+      [
+        "DATE",
+        "INTEGER",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22596,
+      [
+        "SELECT cal.main.add_business_days(DATE '2026-12-24', 2, 'GB')"
+      ],
+      "CONSISTENT",
+      [
+        "calendar",
+        "business-days"
+      ]
+    ],
+    [
+      "cal",
+      "22592",
+      "main",
+      "add_business_days",
+      null,
+      "scalar",
+      "Advance a date by N business days in a country/subdivision, skipping weekends + holidays",
+      null,
+      {
+        "vgi.category": "business-days",
+        "vgi.doc_llm": "Advance a date by **N business days in a country subdivision** (state/province/region), skipping weekends and that subdivision's public holidays. Pass the ISO-3166 country code plus a subdivision code (e.g. `'US','CA'`) as the third and fourth arguments. This four-argument overload honours *regional* holidays the national overload would miss -- e.g. advancing across California's Cesar Chavez Day skips it, whereas the plain `'US'` calendar does not. `N` may be negative to step backwards; the result is always a business day. Returns `DATE` per row (`NULL` inputs -> `NULL`). See `cal.supported_countries` for valid `(country, subdiv)` pairs.",
+        "vgi.doc_md": "## add_business_days(date, n, country, subdiv)\n\nAdvance `date` by **`n` business days in a subdivision** (e.g. `'US','CA'`).\n\nSkips weekends + that subdivision's holidays; `n` can be negative. Per-row `DATE`. See `cal.supported_countries` for valid `(country, subdiv)` pairs.",
+        "vgi.example_queries": "[{\"description\": \"Two business days after 2026-12-24 (skips Christmas + weekend)\", \"sql\": \"SELECT cal.main.add_business_days(DATE '2026-12-24', 2)\"}, {\"description\": \"Two UK business days after 2026-12-24\", \"sql\": \"SELECT cal.main.add_business_days(DATE '2026-12-24', 2, 'GB')\"}, {\"description\": \"Two California business days after 2026-03-30 (skips Cesar Chavez Day)\", \"sql\": \"SELECT cal.main.add_business_days(DATE '2026-03-30', 2, 'US', 'CA')\"}, {\"description\": \"Payment calendar: 1st-of-month 2026 payments from rrule, rolled forward to the next US business day when the 1st is not one, with the reason: the holiday name, or the weekday for weekend rolls.\", \"sql\": \"WITH sched AS (SELECT r.seq, CAST(r.occurrence AS DATE) AS due FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=MONTHLY;BYMONTHDAY=1;COUNT=12') AS r) SELECT due, CASE WHEN cal.main.is_business_day(due) THEN due ELSE cal.main.add_business_days(due, 1) END AS settles_on, CASE WHEN NOT cal.main.is_business_day(due) THEN coalesce(cal.main.holiday_name(due), dayname(due)) END AS rolled_because FROM sched ORDER BY seq\"}]",
+        "vgi.keywords": "[\"add business days\", \"subdivision business days\", \"state working days\", \"regional holiday\", \"california business days\", \"due date\", \"settlement\", \"banking days\"]",
+        "vgi.title": "Add Business Days In Subdivision"
+      },
+      "DATE",
+      [
+        "date",
+        "n",
+        "country",
+        "subdiv"
+      ],
+      [
+        "DATE",
+        "INTEGER",
+        "VARCHAR",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22596,
+      [
+        "SELECT cal.main.add_business_days(DATE '2026-03-30', 2, 'US', 'CA')"
+      ],
+      "CONSISTENT",
+      [
+        "calendar",
+        "business-days"
+      ]
+    ],
+    [
+      "cal",
+      "22592",
+      "main",
+      "business_days",
+      null,
+      "table",
+      "Every business day in an inclusive [start, end] range",
+      null,
+      {
+        "vgi.category": "business-days",
+        "vgi.doc_llm": "Enumerate **every business (working) day in an inclusive `[start, end]` date range**, one per row -- weekdays that are not public holidays. Takes `start` and `end` positionally plus optional named `country` (default `'US'`) and `subdiv`. Both bounds are inclusive. Use it to expand a range into a working-day series you can join against, count, or window over (e.g. allocate workload across business days). For other jurisdictions pass `country`/`subdiv`; see `cal.supported_countries` for valid codes.",
+        "vgi.doc_md": "## business_days(start, end, country := ..., subdiv := ...)\n\nEvery **business day in the inclusive `[start, end]` range**, one per row.\n\nWeekdays minus holidays; both bounds inclusive. `country` defaults to `'US'`. Expand a range into a working-day series for joins/counts.",
+        "vgi.example_queries": "[{\"description\": \"How many US business days fall in the 2026 year-end week (Christmas excluded)\", \"sql\": \"SELECT count(*) AS business_days FROM cal.main.business_days(DATE '2026-12-21', DATE '2026-12-31', country := 'US')\"}, {\"description\": \"The US business days of the 2026 year-end week, in order\", \"sql\": \"SELECT date FROM cal.main.business_days(DATE '2026-12-21', DATE '2026-12-31', country := 'US') ORDER BY date\"}, {\"description\": \"Capacity plan: US business days per month in 2026, with the holidays that fell on a weekday and so removed a working day (weekend holidays such as Saturday 4 July are left out).\", \"sql\": \"WITH bd AS (SELECT date_trunc('month', date) AS month, count(*) AS business_days FROM cal.main.business_days(DATE '2026-01-01', DATE '2026-12-31', country := 'US') GROUP BY ALL), lost AS (SELECT date_trunc('month', date) AS month, count(*) AS weekday_holidays, string_agg(name, ', ' ORDER BY date) AS holiday_names FROM cal.main.holidays(2026, country := 'US') WHERE isodow(date) <= 5 GROUP BY ALL) SELECT strftime(bd.month, '%Y-%m') AS month, bd.business_days, coalesce(lost.weekday_holidays, 0) AS weekday_holidays, lost.holiday_names FROM bd LEFT JOIN lost USING (month) ORDER BY bd.month\"}, {\"description\": \"Cross-border settlement window: the days from 21 Dec 2026 to 8 Jan 2027 when both the US and the UK (GB) are open, i.e. US business days that are also GB business days.\", \"sql\": \"SELECT b.date, dayname(b.date) AS weekday FROM cal.main.business_days(DATE '2026-12-21', DATE '2027-01-08', country := 'US') AS b WHERE cal.main.is_business_day(b.date, 'GB') ORDER BY b.date\"}, {\"description\": \"Sprint capacity: US business days in each ISO week from 30 Nov 2026 to 10 Jan 2027, labelled with iso_year_week (Christmas and New Year's Day cut W52 and W53 to 4 days).\", \"sql\": \"SELECT cal.main.iso_year_week(b.date) AS iso_week, count(*) AS business_days, min(b.date) AS first_day, max(b.date) AS last_day FROM cal.main.business_days(DATE '2026-11-30', DATE '2027-01-10', country := 'US') AS b GROUP BY ALL ORDER BY iso_week\"}]",
+        "vgi.keywords": "[\"business days\", \"working days\", \"list business days\", \"workday series\", \"banking days\", \"weekdays excluding holidays\", \"date range\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"date\", \"type\": \"DATE\", \"description\": \"A business day in the range.\"}]",
+        "vgi.title": "Business Days In Range"
+      },
+      null,
+      [
+        "start",
+        "end",
+        "subdiv",
+        "country"
+      ],
+      [
+        "DATE",
+        "DATE",
+        "VARCHAR",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22604,
+      [
+        "SELECT count(*) AS business_days FROM cal.main.business_days(DATE '2026-12-21', DATE '2026-12-31', country := 'US')",
+        "SELECT date FROM cal.main.business_days(DATE '2026-12-21', DATE '2026-12-31', country := 'US') ORDER BY date"
+      ],
+      null,
+      [
+        "calendar",
+        "business-days"
+      ]
+    ],
+    [
+      "cal",
+      "22592",
+      "main",
+      "business_days_between",
+      null,
+      "scalar",
+      "Count business days in [start, end) (start inclusive; country defaults to 'US')",
+      null,
+      {
+        "vgi.category": "business-days",
+        "vgi.doc_llm": "Count the number of **business days in `[start, end)` for a country subdivision** (state/province/region) -- `start` inclusive, `end` exclusive -- skipping weekends and that subdivision's public holidays. Pass the ISO-3166 country code plus a subdivision code (e.g. `'US','CA'`) as the third and fourth arguments. This four-argument overload honours *regional* holidays the national overload would miss. Returns `INTEGER` per row (`NULL` if a bound is `NULL`); negative if `end` precedes `start`. See `cal.supported_countries` for valid `(country, subdiv)` pairs.",
+        "vgi.doc_md": "## business_days_between(start, end, country, subdiv)\n\nCount **business days in `[start, end)`** for a subdivision (e.g. `'US','CA'`).\n\nSkips weekends + that subdivision's holidays; negative if reversed. Per-row `INTEGER`. See `cal.supported_countries` for valid `(country, subdiv)` pairs.",
+        "vgi.example_queries": "[{\"description\": \"Business days in January 2026\", \"sql\": \"SELECT cal.main.business_days_between(DATE '2026-01-01', DATE '2026-02-01')\"}, {\"description\": \"UK business days in January 2026\", \"sql\": \"SELECT cal.main.business_days_between(DATE '2026-01-01', DATE '2026-02-01', 'GB')\"}, {\"description\": \"California business days in March 2026 (excludes Cesar Chavez Day)\", \"sql\": \"SELECT cal.main.business_days_between(DATE '2026-03-01', DATE '2026-04-01', 'US', 'CA')\"}, {\"description\": \"Countdown: the US holidays on or after 13 November 2026, with how many US business days remain until each (business_days_between counts [start, end)).\", \"sql\": \"SELECT h.date, h.name, cal.main.business_days_between(DATE '2026-11-13', h.date) AS business_days_away FROM cal.main.holidays(2026, country := 'US') AS h WHERE h.date >= DATE '2026-11-13' ORDER BY h.date\"}]",
+        "vgi.keywords": "[\"business days between\", \"subdivision business days\", \"state working day count\", \"regional holiday\", \"california business days\", \"turnaround\", \"banking days\"]",
+        "vgi.title": "Count Business Days Between In Subdivision"
+      },
+      "INTEGER",
+      [
+        "start",
+        "end"
+      ],
+      [
+        "DATE",
+        "DATE"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22597,
+      [
+        "SELECT cal.main.business_days_between(DATE '2026-01-01', DATE '2026-02-01')"
+      ],
+      "CONSISTENT",
+      [
+        "calendar",
+        "business-days"
+      ]
+    ],
+    [
+      "cal",
+      "22592",
+      "main",
+      "business_days_between",
+      null,
+      "scalar",
+      "Count business days in [start, end) for a country (start inclusive)",
+      null,
+      {
+        "vgi.category": "business-days",
+        "vgi.doc_llm": "Count the number of **business days in `[start, end)` for a country subdivision** (state/province/region) -- `start` inclusive, `end` exclusive -- skipping weekends and that subdivision's public holidays. Pass the ISO-3166 country code plus a subdivision code (e.g. `'US','CA'`) as the third and fourth arguments. This four-argument overload honours *regional* holidays the national overload would miss. Returns `INTEGER` per row (`NULL` if a bound is `NULL`); negative if `end` precedes `start`. See `cal.supported_countries` for valid `(country, subdiv)` pairs.",
+        "vgi.doc_md": "## business_days_between(start, end, country, subdiv)\n\nCount **business days in `[start, end)`** for a subdivision (e.g. `'US','CA'`).\n\nSkips weekends + that subdivision's holidays; negative if reversed. Per-row `INTEGER`. See `cal.supported_countries` for valid `(country, subdiv)` pairs.",
+        "vgi.example_queries": "[{\"description\": \"Business days in January 2026\", \"sql\": \"SELECT cal.main.business_days_between(DATE '2026-01-01', DATE '2026-02-01')\"}, {\"description\": \"UK business days in January 2026\", \"sql\": \"SELECT cal.main.business_days_between(DATE '2026-01-01', DATE '2026-02-01', 'GB')\"}, {\"description\": \"California business days in March 2026 (excludes Cesar Chavez Day)\", \"sql\": \"SELECT cal.main.business_days_between(DATE '2026-03-01', DATE '2026-04-01', 'US', 'CA')\"}, {\"description\": \"Countdown: the US holidays on or after 13 November 2026, with how many US business days remain until each (business_days_between counts [start, end)).\", \"sql\": \"SELECT h.date, h.name, cal.main.business_days_between(DATE '2026-11-13', h.date) AS business_days_away FROM cal.main.holidays(2026, country := 'US') AS h WHERE h.date >= DATE '2026-11-13' ORDER BY h.date\"}]",
+        "vgi.keywords": "[\"business days between\", \"subdivision business days\", \"state working day count\", \"regional holiday\", \"california business days\", \"turnaround\", \"banking days\"]",
+        "vgi.title": "Count Business Days Between In Subdivision"
+      },
+      "INTEGER",
+      [
+        "start",
+        "end",
+        "country"
+      ],
+      [
+        "DATE",
+        "DATE",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22597,
+      [
+        "SELECT cal.main.business_days_between(DATE '2026-01-01', DATE '2026-02-01', 'GB')"
+      ],
+      "CONSISTENT",
+      [
+        "calendar",
+        "business-days"
+      ]
+    ],
+    [
+      "cal",
+      "22592",
+      "main",
+      "business_days_between",
+      null,
+      "scalar",
+      "Count business days in [start, end) for a country/subdivision (start inclusive)",
+      null,
+      {
+        "vgi.category": "business-days",
+        "vgi.doc_llm": "Count the number of **business days in `[start, end)` for a country subdivision** (state/province/region) -- `start` inclusive, `end` exclusive -- skipping weekends and that subdivision's public holidays. Pass the ISO-3166 country code plus a subdivision code (e.g. `'US','CA'`) as the third and fourth arguments. This four-argument overload honours *regional* holidays the national overload would miss. Returns `INTEGER` per row (`NULL` if a bound is `NULL`); negative if `end` precedes `start`. See `cal.supported_countries` for valid `(country, subdiv)` pairs.",
+        "vgi.doc_md": "## business_days_between(start, end, country, subdiv)\n\nCount **business days in `[start, end)`** for a subdivision (e.g. `'US','CA'`).\n\nSkips weekends + that subdivision's holidays; negative if reversed. Per-row `INTEGER`. See `cal.supported_countries` for valid `(country, subdiv)` pairs.",
+        "vgi.example_queries": "[{\"description\": \"Business days in January 2026\", \"sql\": \"SELECT cal.main.business_days_between(DATE '2026-01-01', DATE '2026-02-01')\"}, {\"description\": \"UK business days in January 2026\", \"sql\": \"SELECT cal.main.business_days_between(DATE '2026-01-01', DATE '2026-02-01', 'GB')\"}, {\"description\": \"California business days in March 2026 (excludes Cesar Chavez Day)\", \"sql\": \"SELECT cal.main.business_days_between(DATE '2026-03-01', DATE '2026-04-01', 'US', 'CA')\"}, {\"description\": \"Countdown: the US holidays on or after 13 November 2026, with how many US business days remain until each (business_days_between counts [start, end)).\", \"sql\": \"SELECT h.date, h.name, cal.main.business_days_between(DATE '2026-11-13', h.date) AS business_days_away FROM cal.main.holidays(2026, country := 'US') AS h WHERE h.date >= DATE '2026-11-13' ORDER BY h.date\"}]",
+        "vgi.keywords": "[\"business days between\", \"subdivision business days\", \"state working day count\", \"regional holiday\", \"california business days\", \"turnaround\", \"banking days\"]",
+        "vgi.title": "Count Business Days Between In Subdivision"
+      },
+      "INTEGER",
+      [
+        "start",
+        "end",
+        "country",
+        "subdiv"
+      ],
+      [
+        "DATE",
+        "DATE",
+        "VARCHAR",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22597,
+      [
+        "SELECT cal.main.business_days_between(DATE '2026-03-01', DATE '2026-04-01', 'US', 'CA')"
+      ],
+      "CONSISTENT",
+      [
+        "calendar",
+        "business-days"
+      ]
+    ],
+    [
+      "cal",
+      "22592",
+      "main",
+      "easter",
+      null,
+      "scalar",
+      "Western (Gregorian) Easter Sunday for a year",
+      null,
+      {
+        "vgi.category": "date-parts",
+        "vgi.doc_llm": "Return the date of Western (Gregorian) **Easter Sunday** for a given calendar year. Easter is a *movable feast* whose date is derived from the ecclesiastical lunar calendar, so it cannot be computed with ordinary date arithmetic. Pass an integer year (e.g. `2026`) and get back a `DATE`; `NULL` years pass through as `NULL`. Useful for anchoring Easter-relative observances such as Good Friday (Easter - 2 days), Easter Monday (Easter + 1), Ascension, or Pentecost. This is the Gregorian/Western computus only -- Orthodox (Julian) Easter is not returned.",
+        "vgi.doc_md": "## easter\n\nWestern (Gregorian) **Easter Sunday** for a year.\n\nEaster is a movable feast, so it needs the computus rather than plain date math. `easter(2026)` returns `DATE '2026-04-05'`.\n\nDerive related days arithmetically: Good Friday is `easter(y) - 2`, Easter Monday is `easter(y) + 1`. Returns the Western/Gregorian date only.",
+        "vgi.example_queries": "[{\"description\": \"Easter Sunday in 2026\", \"sql\": \"SELECT cal.main.easter(2026)\"}, {\"description\": \"Days from that year's Easter Sunday (easter accepts year(d) directly)\", \"sql\": \"SELECT d, d - cal.main.easter(year(d)) AS days_from_easter FROM (VALUES (DATE '2026-04-03'), (DATE '2027-05-06')) AS t(d) ORDER BY d\"}, {\"description\": \"Moveable feasts: the German holidays whose offset from easter() is the same in 2025, 2026 and 2027, i.e. the Easter-anchored ones, with that offset in days. Fixed-date holidays such as Labor Day drop out.\", \"sql\": \"WITH h AS (SELECT date, name FROM cal.main.holidays(2025, country := 'DE') UNION ALL SELECT date, name FROM cal.main.holidays(2026, country := 'DE') UNION ALL SELECT date, name FROM cal.main.holidays(2027, country := 'DE')) SELECT name, min(date - cal.main.easter(year(date))) AS days_from_easter FROM h GROUP BY name HAVING count(*) = 3 AND count(DISTINCT date - cal.main.easter(year(date))) = 1 ORDER BY days_from_easter\"}]",
+        "vgi.keywords": "[\"easter\", \"easter sunday\", \"computus\", \"movable feast\", \"good friday\", \"easter monday\", \"gregorian easter\", \"paschal\"]",
+        "vgi.title": "Easter Sunday Date"
+      },
+      "DATE",
+      [
+        "year"
+      ],
+      [
+        "BIGINT"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22598,
+      [
+        "SELECT cal.main.easter(2026)",
+        "SELECT d, d - cal.main.easter(year(d)) AS days_from_easter FROM (VALUES (DATE '2026-04-03'), (DATE '2027-05-06')) AS t(d) ORDER BY d"
+      ],
+      "CONSISTENT",
+      [
+        "calendar"
+      ]
+    ],
+    [
+      "cal",
+      "22592",
+      "main",
+      "holiday_name",
+      null,
+      "scalar",
+      "Public-holiday name on a date, or NULL (country defaults to 'US')",
+      null,
+      {
+        "vgi.category": "holidays",
+        "vgi.doc_llm": "Return the **name of the public holiday** on a date for a country subdivision (state/province/region), or `NULL`. Pass the ISO-3166 country code plus a subdivision code (e.g. `'US','CA'`). This three-argument overload surfaces *regional* holiday names the national overload would miss -- e.g. `2026-03-31` in `'US','CA'` is `'Cesar Chavez Day'`. Result is `VARCHAR` per row, `NULL` for non-holidays. Discover valid `(country, subdiv)` pairs via `cal.supported_countries`.",
+        "vgi.doc_md": "## holiday_name(date, country, subdiv)\n\n**Name** of the holiday in a subdivision (e.g. `'US','CA'`), else `NULL`.\n\nSurfaces region-only holiday names. Per-row `VARCHAR`; see `cal.supported_countries` for valid pairs.",
+        "vgi.example_queries": "[{\"description\": \"Name of the US holiday on 2026-07-04\", \"sql\": \"SELECT cal.main.holiday_name(DATE '2026-07-04')\"}, {\"description\": \"Name of the UK holiday on Christmas 2026\", \"sql\": \"SELECT cal.main.holiday_name(DATE '2026-12-25', 'GB')\"}, {\"description\": \"Name of the California holiday on 2026-03-31\", \"sql\": \"SELECT cal.main.holiday_name(DATE '2026-03-31', 'US', 'CA')\"}]",
+        "vgi.keywords": "[\"holiday name\", \"subdivision holiday name\", \"state holiday name\", \"regional holiday\", \"cesar chavez day\", \"california holiday name\"]",
+        "vgi.title": "Public Holiday Name In Subdivision"
+      },
+      "VARCHAR",
+      [
+        "date"
+      ],
+      [
+        "DATE"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22599,
+      [
+        "SELECT cal.main.holiday_name(DATE '2026-07-04')"
+      ],
+      "CONSISTENT",
+      [
+        "calendar",
+        "holidays"
+      ]
+    ],
+    [
+      "cal",
+      "22592",
+      "main",
+      "holiday_name",
+      null,
+      "scalar",
+      "Public-holiday name on a date in a country, or NULL",
+      null,
+      {
+        "vgi.category": "holidays",
+        "vgi.doc_llm": "Return the **name of the public holiday** on a date for a country subdivision (state/province/region), or `NULL`. Pass the ISO-3166 country code plus a subdivision code (e.g. `'US','CA'`). This three-argument overload surfaces *regional* holiday names the national overload would miss -- e.g. `2026-03-31` in `'US','CA'` is `'Cesar Chavez Day'`. Result is `VARCHAR` per row, `NULL` for non-holidays. Discover valid `(country, subdiv)` pairs via `cal.supported_countries`.",
+        "vgi.doc_md": "## holiday_name(date, country, subdiv)\n\n**Name** of the holiday in a subdivision (e.g. `'US','CA'`), else `NULL`.\n\nSurfaces region-only holiday names. Per-row `VARCHAR`; see `cal.supported_countries` for valid pairs.",
+        "vgi.example_queries": "[{\"description\": \"Name of the US holiday on 2026-07-04\", \"sql\": \"SELECT cal.main.holiday_name(DATE '2026-07-04')\"}, {\"description\": \"Name of the UK holiday on Christmas 2026\", \"sql\": \"SELECT cal.main.holiday_name(DATE '2026-12-25', 'GB')\"}, {\"description\": \"Name of the California holiday on 2026-03-31\", \"sql\": \"SELECT cal.main.holiday_name(DATE '2026-03-31', 'US', 'CA')\"}]",
+        "vgi.keywords": "[\"holiday name\", \"subdivision holiday name\", \"state holiday name\", \"regional holiday\", \"cesar chavez day\", \"california holiday name\"]",
+        "vgi.title": "Public Holiday Name In Subdivision"
+      },
+      "VARCHAR",
+      [
+        "date",
+        "country"
+      ],
+      [
+        "DATE",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22599,
+      [
+        "SELECT cal.main.holiday_name(DATE '2026-12-25', 'GB')"
+      ],
+      "CONSISTENT",
+      [
+        "calendar",
+        "holidays"
+      ]
+    ],
+    [
+      "cal",
+      "22592",
+      "main",
+      "holiday_name",
+      null,
+      "scalar",
+      "Public-holiday name on a date in a country/subdivision, or NULL",
+      null,
+      {
+        "vgi.category": "holidays",
+        "vgi.doc_llm": "Return the **name of the public holiday** on a date for a country subdivision (state/province/region), or `NULL`. Pass the ISO-3166 country code plus a subdivision code (e.g. `'US','CA'`). This three-argument overload surfaces *regional* holiday names the national overload would miss -- e.g. `2026-03-31` in `'US','CA'` is `'Cesar Chavez Day'`. Result is `VARCHAR` per row, `NULL` for non-holidays. Discover valid `(country, subdiv)` pairs via `cal.supported_countries`.",
+        "vgi.doc_md": "## holiday_name(date, country, subdiv)\n\n**Name** of the holiday in a subdivision (e.g. `'US','CA'`), else `NULL`.\n\nSurfaces region-only holiday names. Per-row `VARCHAR`; see `cal.supported_countries` for valid pairs.",
+        "vgi.example_queries": "[{\"description\": \"Name of the US holiday on 2026-07-04\", \"sql\": \"SELECT cal.main.holiday_name(DATE '2026-07-04')\"}, {\"description\": \"Name of the UK holiday on Christmas 2026\", \"sql\": \"SELECT cal.main.holiday_name(DATE '2026-12-25', 'GB')\"}, {\"description\": \"Name of the California holiday on 2026-03-31\", \"sql\": \"SELECT cal.main.holiday_name(DATE '2026-03-31', 'US', 'CA')\"}]",
+        "vgi.keywords": "[\"holiday name\", \"subdivision holiday name\", \"state holiday name\", \"regional holiday\", \"cesar chavez day\", \"california holiday name\"]",
+        "vgi.title": "Public Holiday Name In Subdivision"
+      },
+      "VARCHAR",
+      [
+        "date",
+        "country",
+        "subdiv"
+      ],
+      [
+        "DATE",
+        "VARCHAR",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22599,
+      [
+        "SELECT cal.main.holiday_name(DATE '2026-03-31', 'US', 'CA')"
+      ],
+      "CONSISTENT",
+      [
+        "calendar",
+        "holidays"
+      ]
+    ],
+    [
+      "cal",
+      "22592",
+      "main",
+      "holidays",
+      null,
+      "table",
+      "All public holidays in a year (date, name, observed)",
+      null,
+      {
+        "vgi.category": "holidays",
+        "vgi.doc_llm": "List **every public holiday in a calendar year** as `(date, name, observed)` rows. Takes the year as a positional argument and optional named `country` (default `'US'`) and `subdiv` (state/province) arguments. The `observed` column is `true` when the row is an *observed-day shift* -- e.g. a holiday that falls on a weekend and is observed on the adjacent weekday. Coverage spans hundreds of countries via the `holidays` library; call `cal.supported_countries` to discover valid `country`/`subdiv` codes. Use it to build a holiday lookup table, join against transactions, or audit a jurisdiction's calendar.",
+        "vgi.doc_md": "## holidays(year, country := ..., subdiv := ...)\n\nAll **public holidays in a year** as `(date, name, observed)` rows.\n\n`country` defaults to `'US'`; add `subdiv` for regional holidays. `observed` flags weekend-shift observances. See `cal.supported_countries` for valid codes.",
+        "vgi.example_queries": "[{\"description\": \"Every US public holiday in 2026, as (date, name) ordered by date\", \"sql\": \"SELECT date, name FROM cal.main.holidays(2026, country := 'US') ORDER BY date\"}, {\"description\": \"US + California holidays in 2026, ordered by date\", \"sql\": \"SELECT date, name FROM cal.main.holidays(2026, country := 'US', subdiv := 'CA') ORDER BY date\"}, {\"description\": \"Countdown: the US holidays on or after 13 November 2026, with how many US business days remain until each (business_days_between counts [start, end)).\", \"sql\": \"SELECT h.date, h.name, cal.main.business_days_between(DATE '2026-11-13', h.date) AS business_days_away FROM cal.main.holidays(2026, country := 'US') AS h WHERE h.date >= DATE '2026-11-13' ORDER BY h.date\"}, {\"description\": \"Moveable feasts: the German holidays whose offset from easter() is the same in 2025, 2026 and 2027, i.e. the Easter-anchored ones, with that offset in days. Fixed-date holidays such as Labor Day drop out.\", \"sql\": \"WITH h AS (SELECT date, name FROM cal.main.holidays(2025, country := 'DE') UNION ALL SELECT date, name FROM cal.main.holidays(2026, country := 'DE') UNION ALL SELECT date, name FROM cal.main.holidays(2027, country := 'DE')) SELECT name, min(date - cal.main.easter(year(date))) AS days_from_easter FROM h GROUP BY name HAVING count(*) = 3 AND count(DISTINCT date - cal.main.easter(year(date))) = 1 ORDER BY days_from_easter\"}, {\"description\": \"Cross-border closures: the 2026 dates that are a public holiday in both the US and GB, with each country's holiday name.\", \"sql\": \"SELECT us.date, us.name AS us_holiday, gb.name AS gb_holiday FROM cal.main.holidays(2026, country := 'US') AS us JOIN cal.main.holidays(2026, country := 'GB') AS gb ON us.date = gb.date ORDER BY us.date\"}]",
+        "vgi.executable_examples": "[{\"description\": \"Every US public holiday in 2026.\", \"sql\": \"SELECT * FROM cal.main.holidays(2026, country := 'US') ORDER BY date\"}, {\"description\": \"US + California holidays in 2026.\", \"sql\": \"SELECT date, name FROM cal.main.holidays(2026, country := 'US', subdiv := 'CA') ORDER BY date\"}, {\"description\": \"Count the US public holidays in 2026.\", \"sql\": \"SELECT count(*) AS n FROM cal.main.holidays(2026, country := 'US')\"}]",
+        "vgi.keywords": "[\"holidays\", \"list holidays\", \"holiday calendar\", \"public holidays\", \"bank holidays\", \"observed\", \"holiday table\", \"year holidays\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"date\", \"type\": \"DATE\", \"description\": \"Holiday date.\"}, {\"name\": \"name\", \"type\": \"VARCHAR\", \"description\": \"Holiday name.\"}, {\"name\": \"observed\", \"type\": \"BOOLEAN\", \"description\": \"True if this row is an observed-day shift (e.g. a weekend holiday observed on an adjacent weekday).\"}]",
+        "vgi.title": "Holidays In A Year"
+      },
+      null,
+      [
+        "year",
+        "subdiv",
+        "country"
+      ],
+      [
+        "BIGINT",
+        "VARCHAR",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22605,
+      [
+        "SELECT date, name FROM cal.main.holidays(2026, country := 'US') ORDER BY date",
+        "SELECT date, name FROM cal.main.holidays(2026, country := 'US', subdiv := 'CA') ORDER BY date"
+      ],
+      null,
+      [
+        "calendar",
+        "holidays"
+      ]
+    ],
+    [
+      "cal",
+      "22592",
+      "main",
+      "is_business_day",
+      null,
+      "scalar",
+      "True if a date is a weekday and not a public holiday (country defaults to 'US')",
+      null,
+      {
+        "vgi.category": "business-days",
+        "vgi.doc_llm": "Test whether a date is a **business (working) day in a country subdivision** (state/province/region) -- a weekday that is not a holiday under that subdivision's calendar. Pass the ISO-3166 country code plus a subdivision code (e.g. `'US','CA'`). Regional holidays count: `2026-03-31` is a weekday but, in California, it is Cesar Chavez Day and so is *not* a business day there. Returns `BOOLEAN` per row (`NULL` date -> `NULL`); see `cal.supported_countries` for valid pairs.",
+        "vgi.doc_md": "## is_business_day(date, country, subdiv)\n\nTrue if `date` is a **working day in a subdivision** (e.g. `'US','CA'`).\n\nHonours region-only holidays. Per-row `BOOLEAN`; see `cal.supported_countries` for valid `(country, subdiv)` pairs.",
+        "vgi.example_queries": "[{\"description\": \"Is Christmas 2026 a business day?\", \"sql\": \"SELECT cal.main.is_business_day(DATE '2026-12-25')\"}, {\"description\": \"Is Christmas 2026 a UK business day?\", \"sql\": \"SELECT cal.main.is_business_day(DATE '2026-12-25', 'GB')\"}, {\"description\": \"Is Cesar Chavez Day a California business day?\", \"sql\": \"SELECT cal.main.is_business_day(DATE '2026-03-31', 'US', 'CA')\"}, {\"description\": \"Cross-border settlement window: the days from 21 Dec 2026 to 8 Jan 2027 when both the US and the UK (GB) are open, i.e. US business days that are also GB business days.\", \"sql\": \"SELECT b.date, dayname(b.date) AS weekday FROM cal.main.business_days(DATE '2026-12-21', DATE '2027-01-08', country := 'US') AS b WHERE cal.main.is_business_day(b.date, 'GB') ORDER BY b.date\"}]",
+        "vgi.keywords": "[\"is business day\", \"subdivision business day\", \"state working day\", \"regional holiday\", \"california business day\", \"banking day\"]",
+        "vgi.title": "Is Business Day In Subdivision"
+      },
+      "BOOLEAN",
+      [
+        "date"
+      ],
+      [
+        "DATE"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22600,
+      [
+        "SELECT cal.main.is_business_day(DATE '2026-12-25')"
+      ],
+      "CONSISTENT",
+      [
+        "calendar",
+        "business-days"
+      ]
+    ],
+    [
+      "cal",
+      "22592",
+      "main",
+      "is_business_day",
+      null,
+      "scalar",
+      "True if a date is a weekday and not a public holiday in a country",
+      null,
+      {
+        "vgi.category": "business-days",
+        "vgi.doc_llm": "Test whether a date is a **business (working) day in a country subdivision** (state/province/region) -- a weekday that is not a holiday under that subdivision's calendar. Pass the ISO-3166 country code plus a subdivision code (e.g. `'US','CA'`). Regional holidays count: `2026-03-31` is a weekday but, in California, it is Cesar Chavez Day and so is *not* a business day there. Returns `BOOLEAN` per row (`NULL` date -> `NULL`); see `cal.supported_countries` for valid pairs.",
+        "vgi.doc_md": "## is_business_day(date, country, subdiv)\n\nTrue if `date` is a **working day in a subdivision** (e.g. `'US','CA'`).\n\nHonours region-only holidays. Per-row `BOOLEAN`; see `cal.supported_countries` for valid `(country, subdiv)` pairs.",
+        "vgi.example_queries": "[{\"description\": \"Is Christmas 2026 a business day?\", \"sql\": \"SELECT cal.main.is_business_day(DATE '2026-12-25')\"}, {\"description\": \"Is Christmas 2026 a UK business day?\", \"sql\": \"SELECT cal.main.is_business_day(DATE '2026-12-25', 'GB')\"}, {\"description\": \"Is Cesar Chavez Day a California business day?\", \"sql\": \"SELECT cal.main.is_business_day(DATE '2026-03-31', 'US', 'CA')\"}, {\"description\": \"Cross-border settlement window: the days from 21 Dec 2026 to 8 Jan 2027 when both the US and the UK (GB) are open, i.e. US business days that are also GB business days.\", \"sql\": \"SELECT b.date, dayname(b.date) AS weekday FROM cal.main.business_days(DATE '2026-12-21', DATE '2027-01-08', country := 'US') AS b WHERE cal.main.is_business_day(b.date, 'GB') ORDER BY b.date\"}]",
+        "vgi.keywords": "[\"is business day\", \"subdivision business day\", \"state working day\", \"regional holiday\", \"california business day\", \"banking day\"]",
+        "vgi.title": "Is Business Day In Subdivision"
+      },
+      "BOOLEAN",
+      [
+        "date",
+        "country"
+      ],
+      [
+        "DATE",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22600,
+      [
+        "SELECT cal.main.is_business_day(DATE '2026-12-25', 'GB')"
+      ],
+      "CONSISTENT",
+      [
+        "calendar",
+        "business-days"
+      ]
+    ],
+    [
+      "cal",
+      "22592",
+      "main",
+      "is_business_day",
+      null,
+      "scalar",
+      "True if a date is a weekday and not a public holiday in a country/subdivision",
+      null,
+      {
+        "vgi.category": "business-days",
+        "vgi.doc_llm": "Test whether a date is a **business (working) day in a country subdivision** (state/province/region) -- a weekday that is not a holiday under that subdivision's calendar. Pass the ISO-3166 country code plus a subdivision code (e.g. `'US','CA'`). Regional holidays count: `2026-03-31` is a weekday but, in California, it is Cesar Chavez Day and so is *not* a business day there. Returns `BOOLEAN` per row (`NULL` date -> `NULL`); see `cal.supported_countries` for valid pairs.",
+        "vgi.doc_md": "## is_business_day(date, country, subdiv)\n\nTrue if `date` is a **working day in a subdivision** (e.g. `'US','CA'`).\n\nHonours region-only holidays. Per-row `BOOLEAN`; see `cal.supported_countries` for valid `(country, subdiv)` pairs.",
+        "vgi.example_queries": "[{\"description\": \"Is Christmas 2026 a business day?\", \"sql\": \"SELECT cal.main.is_business_day(DATE '2026-12-25')\"}, {\"description\": \"Is Christmas 2026 a UK business day?\", \"sql\": \"SELECT cal.main.is_business_day(DATE '2026-12-25', 'GB')\"}, {\"description\": \"Is Cesar Chavez Day a California business day?\", \"sql\": \"SELECT cal.main.is_business_day(DATE '2026-03-31', 'US', 'CA')\"}, {\"description\": \"Cross-border settlement window: the days from 21 Dec 2026 to 8 Jan 2027 when both the US and the UK (GB) are open, i.e. US business days that are also GB business days.\", \"sql\": \"SELECT b.date, dayname(b.date) AS weekday FROM cal.main.business_days(DATE '2026-12-21', DATE '2027-01-08', country := 'US') AS b WHERE cal.main.is_business_day(b.date, 'GB') ORDER BY b.date\"}]",
+        "vgi.keywords": "[\"is business day\", \"subdivision business day\", \"state working day\", \"regional holiday\", \"california business day\", \"banking day\"]",
+        "vgi.title": "Is Business Day In Subdivision"
+      },
+      "BOOLEAN",
+      [
+        "date",
+        "country",
+        "subdiv"
+      ],
+      [
+        "DATE",
+        "VARCHAR",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22600,
+      [
+        "SELECT cal.main.is_business_day(DATE '2026-03-31', 'US', 'CA')"
+      ],
+      "CONSISTENT",
+      [
+        "calendar",
+        "business-days"
+      ]
+    ],
+    [
+      "cal",
+      "22592",
+      "main",
+      "is_holiday",
+      null,
+      "scalar",
+      "True if a date is a public holiday (country defaults to 'US')",
+      null,
+      {
+        "vgi.category": "holidays",
+        "vgi.doc_llm": "Test whether a date is a **public holiday in a country subdivision** (state, province, or region). Pass the ISO-3166 country code plus a subdivision code (e.g. `'US','CA'` for California, `'DE','BY'` for Bavaria). This three-argument overload catches *regional* holidays that the national overload misses -- e.g. Cesar Chavez Day is observed in California but is not a US-wide federal holiday. Returns `BOOLEAN` per row (`NULL` date -> `NULL`). Discover valid country/subdivision pairs with `cal.supported_countries`; an unknown code raises a clear error.",
+        "vgi.doc_md": "## is_holiday(date, country, subdiv)\n\nTrue if `date` is a **holiday in a subdivision** (e.g. `'US','CA'`).\n\nCatches region-only holidays national tests miss. Per-row `BOOLEAN`; see `cal.supported_countries` for valid `(country, subdiv)` pairs.",
+        "vgi.example_queries": "[{\"description\": \"Is Christmas 2026 a (US) holiday?\", \"sql\": \"SELECT cal.main.is_holiday(DATE '2026-12-25')\"}, {\"description\": \"Is Christmas 2026 a UK holiday?\", \"sql\": \"SELECT cal.main.is_holiday(DATE '2026-12-25', 'GB')\"}, {\"description\": \"Cesar Chavez Day is a California holiday\", \"sql\": \"SELECT cal.main.is_holiday(DATE '2026-03-31', 'US', 'CA')\"}]",
+        "vgi.keywords": "[\"is holiday\", \"subdivision holiday\", \"state holiday\", \"provincial holiday\", \"regional holiday\", \"cesar chavez day\", \"california holiday\"]",
+        "vgi.title": "Is Public Holiday In Subdivision"
+      },
+      "BOOLEAN",
+      [
+        "date"
+      ],
+      [
+        "DATE"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22601,
+      [
+        "SELECT cal.main.is_holiday(DATE '2026-12-25')"
+      ],
+      "CONSISTENT",
+      [
+        "calendar",
+        "holidays"
+      ]
+    ],
+    [
+      "cal",
+      "22592",
+      "main",
+      "is_holiday",
+      null,
+      "scalar",
+      "True if a date is a public holiday in a country",
+      null,
+      {
+        "vgi.category": "holidays",
+        "vgi.doc_llm": "Test whether a date is a **public holiday in a country subdivision** (state, province, or region). Pass the ISO-3166 country code plus a subdivision code (e.g. `'US','CA'` for California, `'DE','BY'` for Bavaria). This three-argument overload catches *regional* holidays that the national overload misses -- e.g. Cesar Chavez Day is observed in California but is not a US-wide federal holiday. Returns `BOOLEAN` per row (`NULL` date -> `NULL`). Discover valid country/subdivision pairs with `cal.supported_countries`; an unknown code raises a clear error.",
+        "vgi.doc_md": "## is_holiday(date, country, subdiv)\n\nTrue if `date` is a **holiday in a subdivision** (e.g. `'US','CA'`).\n\nCatches region-only holidays national tests miss. Per-row `BOOLEAN`; see `cal.supported_countries` for valid `(country, subdiv)` pairs.",
+        "vgi.example_queries": "[{\"description\": \"Is Christmas 2026 a (US) holiday?\", \"sql\": \"SELECT cal.main.is_holiday(DATE '2026-12-25')\"}, {\"description\": \"Is Christmas 2026 a UK holiday?\", \"sql\": \"SELECT cal.main.is_holiday(DATE '2026-12-25', 'GB')\"}, {\"description\": \"Cesar Chavez Day is a California holiday\", \"sql\": \"SELECT cal.main.is_holiday(DATE '2026-03-31', 'US', 'CA')\"}]",
+        "vgi.keywords": "[\"is holiday\", \"subdivision holiday\", \"state holiday\", \"provincial holiday\", \"regional holiday\", \"cesar chavez day\", \"california holiday\"]",
+        "vgi.title": "Is Public Holiday In Subdivision"
+      },
+      "BOOLEAN",
+      [
+        "date",
+        "country"
+      ],
+      [
+        "DATE",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22601,
+      [
+        "SELECT cal.main.is_holiday(DATE '2026-12-25', 'GB')"
+      ],
+      "CONSISTENT",
+      [
+        "calendar",
+        "holidays"
+      ]
+    ],
+    [
+      "cal",
+      "22592",
+      "main",
+      "is_holiday",
+      null,
+      "scalar",
+      "True if a date is a public holiday in a country/subdivision",
+      null,
+      {
+        "vgi.category": "holidays",
+        "vgi.doc_llm": "Test whether a date is a **public holiday in a country subdivision** (state, province, or region). Pass the ISO-3166 country code plus a subdivision code (e.g. `'US','CA'` for California, `'DE','BY'` for Bavaria). This three-argument overload catches *regional* holidays that the national overload misses -- e.g. Cesar Chavez Day is observed in California but is not a US-wide federal holiday. Returns `BOOLEAN` per row (`NULL` date -> `NULL`). Discover valid country/subdivision pairs with `cal.supported_countries`; an unknown code raises a clear error.",
+        "vgi.doc_md": "## is_holiday(date, country, subdiv)\n\nTrue if `date` is a **holiday in a subdivision** (e.g. `'US','CA'`).\n\nCatches region-only holidays national tests miss. Per-row `BOOLEAN`; see `cal.supported_countries` for valid `(country, subdiv)` pairs.",
+        "vgi.example_queries": "[{\"description\": \"Is Christmas 2026 a (US) holiday?\", \"sql\": \"SELECT cal.main.is_holiday(DATE '2026-12-25')\"}, {\"description\": \"Is Christmas 2026 a UK holiday?\", \"sql\": \"SELECT cal.main.is_holiday(DATE '2026-12-25', 'GB')\"}, {\"description\": \"Cesar Chavez Day is a California holiday\", \"sql\": \"SELECT cal.main.is_holiday(DATE '2026-03-31', 'US', 'CA')\"}]",
+        "vgi.keywords": "[\"is holiday\", \"subdivision holiday\", \"state holiday\", \"provincial holiday\", \"regional holiday\", \"cesar chavez day\", \"california holiday\"]",
+        "vgi.title": "Is Public Holiday In Subdivision"
+      },
+      "BOOLEAN",
+      [
+        "date",
+        "country",
+        "subdiv"
+      ],
+      [
+        "DATE",
+        "VARCHAR",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22601,
+      [
+        "SELECT cal.main.is_holiday(DATE '2026-03-31', 'US', 'CA')"
+      ],
+      "CONSISTENT",
+      [
+        "calendar",
+        "holidays"
+      ]
+    ],
+    [
+      "cal",
+      "22592",
+      "main",
+      "iso_week",
+      null,
+      "scalar",
+      "ISO-8601 week number (1..53) for a date",
+      null,
+      {
+        "vgi.category": "date-parts",
+        "vgi.doc_llm": "Return the **ISO-8601 week number** (1..53) for a date. Under ISO-8601, weeks start on Monday and week 1 is the week containing the first Thursday of the year, so the first few days of January can belong to week 52/53 of the *previous* ISO year (and the last days of December to week 1 of the *next*). This returns only the week component; pair it with `iso_year_week` when you need the disambiguating year. `NULL` dates pass through as `NULL`.",
+        "vgi.doc_md": "## iso_week\n\n**ISO-8601 week number** (1..53) for a date.\n\nISO weeks start on Monday and week 1 holds the year's first Thursday, so early-January and late-December dates can land in a neighbouring ISO year's week. This returns the week number alone -- use `iso_year_week` for the `YYYY-Www` label.",
+        "vgi.example_queries": "[{\"description\": \"ISO week of a date\", \"sql\": \"SELECT cal.main.iso_week(DATE '2026-06-22')\"}]",
+        "vgi.keywords": "[\"iso week\", \"iso-8601\", \"week number\", \"week of year\", \"calendar week\", \"kw\", \"weeknum\"]",
+        "vgi.title": "ISO-8601 Week Number"
+      },
+      "INTEGER",
+      [
+        "date"
+      ],
+      [
+        "DATE"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22602,
+      [
+        "SELECT cal.main.iso_week(DATE '2026-06-22')"
+      ],
+      "CONSISTENT",
+      [
+        "calendar"
+      ]
+    ],
+    [
+      "cal",
+      "22592",
+      "main",
+      "iso_year_week",
+      null,
+      "scalar",
+      "ISO-8601 year-week label, e.g. '2026-W26'",
+      null,
+      {
+        "vgi.category": "date-parts",
+        "vgi.doc_llm": "Return the **ISO-8601 year-week label** such as `'2026-W26'` for a date. This combines the ISO week-numbering *year* with the ISO week number, which is the correct, unambiguous way to label a week: because ISO week 1 is anchored to the first Thursday, the ISO year can differ from the calendar year for dates near the year boundary (e.g. `2027-01-01` may be labelled `'2026-W53'`). Returns a `VARCHAR`; `NULL` dates pass through. Ideal for grouping rows by week (`GROUP BY iso_year_week(ts)`).",
+        "vgi.doc_md": "## iso_year_week\n\n**ISO-8601 year-week label** like `'2026-W26'`.\n\nCombines the ISO week-numbering year with the zero-padded week so the label is unambiguous across year boundaries (a January date can be `'2025-W52'`). Returns a string -- handy as a `GROUP BY` key for weekly rollups.",
+        "vgi.example_queries": "[{\"description\": \"ISO year-week label of a date\", \"sql\": \"SELECT cal.main.iso_year_week(DATE '2026-06-22')\"}, {\"description\": \"Sprint capacity: US business days in each ISO week from 30 Nov 2026 to 10 Jan 2027, labelled with iso_year_week (Christmas and New Year's Day cut W52 and W53 to 4 days).\", \"sql\": \"SELECT cal.main.iso_year_week(b.date) AS iso_week, count(*) AS business_days, min(b.date) AS first_day, max(b.date) AS last_day FROM cal.main.business_days(DATE '2026-11-30', DATE '2027-01-10', country := 'US') AS b GROUP BY ALL ORDER BY iso_week\"}]",
+        "vgi.keywords": "[\"iso year week\", \"year-week\", \"yyyy-www\", \"week label\", \"weekly bucket\", \"group by week\", \"iso-8601 week\"]",
+        "vgi.title": "ISO-8601 Year-Week Label"
+      },
+      "VARCHAR",
+      [
+        "date"
+      ],
+      [
+        "DATE"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22603,
+      [
+        "SELECT cal.main.iso_year_week(DATE '2026-06-22')"
+      ],
+      "CONSISTENT",
+      [
+        "calendar"
+      ]
+    ],
+    [
+      "cal",
+      "22592",
+      "main",
+      "rrule",
+      null,
+      "table",
+      "Expand an RFC-5545 recurrence rule (dateutil) into timestamps",
+      null,
+      {
+        "vgi.category": "recurrence",
+        "vgi.doc_llm": "Expand an **RFC-5545 (iCalendar) recurrence rule** into concrete timestamps as `(seq, occurrence)` rows. Takes a `dtstart` timestamp and an RRULE string (e.g. `'FREQ=WEEKLY;COUNT=4'` or a full `'RRULE:...'`) positionally, plus optional named `count` and `until` bounds. Because an RRULE can be infinite, you **must** bound it -- either inside the rule (`COUNT=`/`UNTIL=`) or via the `count`/`until` arguments -- or it will not terminate. `seq` is the 0-based occurrence index. Parsing is via `dateutil.rrule`. Use it to materialize schedules: meetings, billing cycles, reminders, cron-like calendar events.",
+        "vgi.doc_md": "## rrule(dtstart, rule, count := ..., until := ...)\n\nExpand an **RFC-5545 RRULE** into `(seq, occurrence)` timestamp rows.\n\nAlways bound the rule (`COUNT`/`UNTIL` in the string, or the `count`/`until` args) -- recurrences can be infinite. `seq` is the 0-based index. Backed by `dateutil.rrule`.",
+        "vgi.example_queries": "[{\"description\": \"The first four weekly occurrences from 2026-01-01, indexed and ordered\", \"sql\": \"SELECT seq, occurrence FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4') ORDER BY seq\"}, {\"description\": \"The first of every month in 2026, as (seq, occurrence) ordered by seq\", \"sql\": \"SELECT seq, occurrence FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=MONTHLY;BYMONTHDAY=1', until := TIMESTAMP '2026-12-31') ORDER BY seq\"}, {\"description\": \"Payment calendar: 1st-of-month 2026 payments from rrule, rolled forward to the next US business day when the 1st is not one, with the reason: the holiday name, or the weekday for weekend rolls.\", \"sql\": \"WITH sched AS (SELECT r.seq, CAST(r.occurrence AS DATE) AS due FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=MONTHLY;BYMONTHDAY=1;COUNT=12') AS r) SELECT due, CASE WHEN cal.main.is_business_day(due) THEN due ELSE cal.main.add_business_days(due, 1) END AS settles_on, CASE WHEN NOT cal.main.is_business_day(due) THEN coalesce(cal.main.holiday_name(due), dayname(due)) END AS rolled_because FROM sched ORDER BY seq\"}]",
+        "vgi.keywords": "[\"rrule\", \"recurrence\", \"rfc-5545\", \"icalendar\", \"recurring event\", \"schedule expansion\", \"freq weekly monthly\", \"repeat\", \"ical\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"seq\", \"type\": \"BIGINT\", \"description\": \"0-based occurrence index.\"}, {\"name\": \"occurrence\", \"type\": \"TIMESTAMP\", \"description\": \"Occurrence timestamp.\"}]",
+        "vgi.title": "Expand Recurrence Rule"
+      },
+      null,
+      [
+        "dtstart",
+        "rule",
+        "until",
+        "count"
+      ],
+      [
+        "TIMESTAMP",
+        "VARCHAR",
+        "TIMESTAMP",
+        "INTEGER"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22606,
+      [
+        "SELECT seq, occurrence FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4') ORDER BY seq",
+        "SELECT seq, occurrence FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=MONTHLY;BYMONTHDAY=1', until := TIMESTAMP '2026-12-31') ORDER BY seq"
+      ],
+      null,
+      [
+        "calendar",
+        "recurrence"
+      ]
+    ]
+  ]
+}

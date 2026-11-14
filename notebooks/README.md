@@ -1,79 +1,87 @@
-# Calendar notebooks
+# Calendar Math examples
 
-[01 · The same lead time, different delivery dates](01_same_lead_time_different_dates.ipynb)
-uses weekday recurrence, regional holidays and business-day arithmetic to explain
-synthetic dispatch and delivery schedules in New York, England and Bavaria.
-The executed example includes three embedded charts and visible Haybarn/VGI SQL.
+[Worker repository](https://github.com/Query-farm/vgi-calendar) · [Shared notebook tools and standard](https://github.com/Query-farm/vgi-example-notebooks)
 
-## Setup and execution
+| Notebook | Investigation | Run |
+|---|---|---|
+| [The same lead time, different delivery dates](01_same_lead_time_different_dates.ipynb) | Compare New York, England and Bavaria holiday calendars; roll closed dispatches forward; reconcile business-day arithmetic with explicit service-date lists. | [Open in Colab](https://colab.research.google.com/github/Query-farm/vgi-calendar/blob/main/notebooks/01_same_lead_time_different_dates.ipynb) |
 
-You need `uv` and Git on PATH. This directory is independently runnable: download
-or copy **notebooks/**, including its assets, helper, environment files and runner.
-From that directory:
+The notebook contains executed SQL, result-driven explanations and three SVG
+charts. It includes the linked worker title and subtitle, Query Farm and VGI
+branding, plus its own Colab button. GitHub displays code expanded; shared setup
+and a small plotting companion keep those cells short. VGI connection SQL remains
+visible.
+
+## Run it
+
+Open in Colab and run all cells, or use `uv` from this directory:
 
 ```sh
 uv sync --locked
-uv run --locked python execute.py
+uv run --locked vgi-notebooks --timeout 300
 ```
 
-Select `.venv/bin/python` in a Jupyter-compatible editor and **Restart Kernel → Run All**.
-No global kernel registration or worker checkout is required. Python 3.13–3.14
-is supported by the notebook environment, which pins published Haybarn 2.0.0rc11.
-The visible SQL launches release **v0.5.0** through this literal command:
+Select `.venv/bin/python` for interactive work. The notebook installs the shared
+base tools, preserving compatible preinstalled plotting and kernel packages; the
+local environment additionally includes the runner. Its companion is downloaded
+from an immutable revision and SHA-256 verified, so a standalone notebook works
+without a worker checkout or copied standard/runner scripts.
 
-```sql
-ATTACH 'cal' (TYPE vgi, LOCATION 'uvx --python 3.13 --with holidays==0.108 --with vgi-python==0.51.0 --from git+https://github.com/Query-farm/vgi-calendar@v0.5.0 vgi-calendar-worker');
+The visible ATTACH uses the released worker:
+
+```text
+uvx --python 3.13 --from git+https://github.com/Query-farm/vgi-calendar@v0.5.0 vgi-calendar-worker
 ```
 
-The GitHub release provides a wheel/source archive, not a native per-platform
-`github-auto` asset; `uvx` installs the pinned Git release and runs its entry point.
-It pins `holidays==0.108` and `vgi-python==0.51.0` to preserve the demonstrated
-calendar rules and SDK. The first run downloads Python/dependencies and the SQL
-extension; calculations are then local. To upgrade, change the release and
-compatible dependency pins in the visible ATTACH, execute the default and
-experiment, and review any calendar-rule changes.
+First setup needs Git and network access. The worker runs in its own environment;
+no SDK override, API key or live-data service is required. A release tag fixes the
+worker code, while dependency ranges may resolve newer holiday rules on future
+installs. The notebook records the resulting dates and checks relationships rather
+than requiring particular library-version-specific holiday labels.
 
-Parameters and connection SQL stay visible; setup, plots and cleanup are folded.
-Editors may retain their own folding state. The example has no live/replay switch.
+## What the example means
 
-Change `LEAD_BUSINESS_DAYS` from 2 to 5 and restart/run all, or preserve the default:
+Nine synthetic weekday requests fall between 21 and 31 December 2026. We apply
+the same request population to New York (`US/NY`), England (`GB/ENG`) and Bavaria
+(`DE/BY`). Supported regional codes are discovered first. The calendar extends
+through 15 January 2027 to cover the largest allowed lead time.
+
+Our policy moves a request on a closed date to the next business day. It then
+counts the selected lead time strictly after dispatch, including the delivery
+date. These are civil dates, not elapsed 24-hour periods. Weekday recurrence does
+not remove holidays. Calling `add_business_days(date, 0)` would leave a closed
+date unchanged, so the dispatch adjustment is explicit.
+
+The first chart keeps business days, weekends and holidays distinct. The second
+uses common axes to compare elapsed calendar days. The final timeline follows
+31 December across the year boundary. Explicit service-date lists and SQL checks
+reconcile `business_days`' inclusive endpoints with `business_days_between`'s
+half-open interval. Holiday names and weekend flags remain available even when
+the display gives holidays priority.
+
+These modeled dates are not carrier commitments, workplace schedules or observed
+shipping performance. Stock-exchange sessions belong to the separate
+[vgi-trading-calendar](https://github.com/Query-farm/vgi-trading-calendar) worker.
+
+## Change one assumption
+
+`LEAD_BUSINESS_DAYS` defaults to `2` and accepts integers `1–7`. The closing
+experiment changes it to `5`. Save that run separately:
 
 ```sh
-uv run --locked python execute.py --parameters '{"LEAD_BUSINESS_DAYS": 5}' \
-  --output-dir validation/lead-5
+uv run --locked vgi-notebooks --timeout 300 \
+  --parameters '{"LEAD_BUSINESS_DAYS":5}' --output-dir artifacts/five-business-days
 ```
 
-The runner uses a fresh kernel with this notebook directory as its working
-directory. It rejects overrides that would overwrite the default and atomically
-saves only successful runs. Experiment copies include their guide, environment,
-helper, runner and branding. Logs, charts and experiments under `validation/` are
-Git-ignored; the primary notebook retains its embedded outputs.
+Requested dates, holiday flags and adjusted dispatches should stay fixed. Every
+service-date list should grow from two dates to five, and deliveries should move
+later. The increase in elapsed calendar days can differ by region. Compare the
+summary, elapsed-day panels, final-request timeline and enumerated service dates;
+restore `2` to reproduce the default.
 
-## Assumptions and provenance
-
-Requests are synthetic. Holiday rules come from the pinned `holidays==0.108`
-library through `cal.main`; they are calendar-model outputs, not carrier service
-commitments or organization-specific operating schedules. The example uses
-US/NY, GB/ENG and DE/BY. English holiday names and observed shifts follow the
-worker's existing implementation. No live holiday service is queried.
-
-Nine weekday requests span 21–31 December 2026 inclusive. Closed requested dates
-roll to the next business day; the service count starts strictly after dispatch
-and includes delivery. Saturday/Sunday are always weekends. The same region
-governs dispatch and delivery, with no time-of-day cutoff or cross-border transit.
-Naive recurrence timestamps become civil dates; no elapsed-hour or UTC simultaneity
-claim is made. The calendar chart covers 21 December–15 January inclusive.
-
-Country/subdivision arguments on scalar functions are constants, so the SQL uses
-explicit branches. The notebook also demonstrates the difference between
-half-open `business_days_between` and inclusive `business_days` endpoint rules.
-Checks validate service counts, available endpoints, uniqueness and chart coverage
-across supported lead-time parameters (integers 1–7).
-
-Domain calculations stay in SQL through the real worker. Python provides formatting,
-parameter validation and chart rendering using Seaborn/Matplotlib. Ordinary in-memory
-tables are used because JupySQL opens separate cursors. Cleanup closes the connection.
-
-Official Strata Sun + Query.Farm and VGI assets are copied unchanged from the approved
-perps examples, originally from the Query.Farm media kit. The linked Strata Sun appears
-at the top and final bottom of the notebook.
+The shared runner rejects unknown overrides, requires a separate output directory
+for experiments and saves notebooks only after success. Checked-in SVG assets
+make GitHub charts sharp; review PNGs and experiment copies are ignored.
+[Coverage evidence](coverage.json) distinguishes actual released execution from
+current-source review. The current source tree and dependency files are identical
+to v0.5.0; no separate current worker build was needed for this notebook update.

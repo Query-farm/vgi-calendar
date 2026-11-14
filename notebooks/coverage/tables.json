@@ -1,0 +1,51 @@
+{
+  "query": "SELECT * FROM duckdb_tables() WHERE database_name='cal' ORDER BY schema_name,table_name",
+  "columns": [
+    "database_name",
+    "database_oid",
+    "schema_name",
+    "schema_oid",
+    "table_name",
+    "table_oid",
+    "comment",
+    "tags",
+    "internal",
+    "temporary",
+    "has_primary_key",
+    "estimated_size",
+    "column_count",
+    "index_count",
+    "check_constraint_count",
+    "sql"
+  ],
+  "rows": [
+    [
+      "cal",
+      22592,
+      "main",
+      22593,
+      "supported_countries",
+      22738,
+      "Discovery table of every (country, subdivision) the holiday/business-day functions accept.",
+      {
+        "category": "calendar",
+        "domain": "date-and-time",
+        "topic": "supported-countries",
+        "vgi.category": "discovery",
+        "vgi.doc_llm": "A ready-to-scan **discovery table** of every `(country, subdivision)` pair the holiday and business-day functions support, so you can find the codes to pass as `country` / `subdiv` to `is_holiday`, `holiday_name`, `is_business_day`, `holidays`, and friends. `country` is an ISO-3166 alpha-2 code; `subdivision` is a state/province code, or the empty string for a country-level entry. Reference it directly by name (no parentheses) in a query. Coverage is broad (hundreds of countries plus subdivisions); `'US'` is merely the default, not a limit.",
+        "vgi.doc_md": "## supported_countries (table)\n\nEvery **`(country, subdivision)`** the holiday functions support, as a plain table.\n\n`country` is ISO-3166 alpha-2; `subdivision` is a state/province code, or the empty string for a country-level entry. Scan it directly by name (no parentheses) to find valid `country`/`subdiv` arguments; `'US'` is just the default.",
+        "vgi.example_queries": "[{\"description\": \"How many countries are supported.\", \"sql\": \"SELECT count(DISTINCT country) FROM cal.main.supported_countries\"}, {\"description\": \"German subdivisions (Bundesl\u00e4nder).\", \"sql\": \"SELECT subdivision FROM cal.main.supported_countries WHERE country = 'DE'\"}]",
+        "vgi.keywords": "[\"supported countries\", \"list countries\", \"available countries\", \"subdivisions\", \"iso-3166\", \"discovery\", \"what countries\", \"jurisdictions\", \"countries table\"]",
+        "vgi.title": "Holiday Coverage"
+      },
+      false,
+      false,
+      true,
+      0,
+      2,
+      1,
+      0,
+      "CREATE TABLE supported_countries(country VARCHAR, subdivision VARCHAR, PRIMARY KEY(country, subdivision));"
+    ]
+  ]
+}

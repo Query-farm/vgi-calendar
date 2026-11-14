@@ -1,0 +1,802 @@
+{
+  "schema_version": 1,
+  "status": "met",
+  "meets_target": true,
+  "catalogs": {
+    "released": {
+      "catalog_status": "verified",
+      "revision": "v0.5.0",
+      "catalog_sha256": "e695fa1c6a9c52590c777cf20ae3f9940e6768baa43855dccff934c951f83709",
+      "collection_reconciled": true,
+      "denominator": 12,
+      "observed_objects": 12,
+      "required": 6,
+      "verified_count": 8,
+      "candidate_count": 0,
+      "fraction": 0.6666666666666666,
+      "meets_target": true,
+      "exact_runtime_count": 8,
+      "runtime_revisions": [
+        "v0.5.0"
+      ],
+      "covered": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "add_business_days"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "business_days"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "business_days_between"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "holiday_name"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "is_business_day"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "is_holiday"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "rrule"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "supported_countries"
+        }
+      ],
+      "uncovered": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "easter"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "holidays"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "iso_week"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "iso_year_week"
+        }
+      ],
+      "objects": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "add_business_days",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "add_business_days(DATE, INTEGER) -> DATE",
+            "add_business_days(DATE, INTEGER, VARCHAR) -> DATE",
+            "add_business_days(DATE, INTEGER, VARCHAR, VARCHAR) -> DATE"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "business_days",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "business_days(DATE, DATE, VARCHAR, VARCHAR) -> None"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "business_days_between",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "business_days_between(DATE, DATE) -> INTEGER",
+            "business_days_between(DATE, DATE, VARCHAR) -> INTEGER",
+            "business_days_between(DATE, DATE, VARCHAR, VARCHAR) -> INTEGER"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "easter",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "easter(BIGINT) -> DATE"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "holiday_name",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "holiday_name(DATE) -> VARCHAR",
+            "holiday_name(DATE, VARCHAR) -> VARCHAR",
+            "holiday_name(DATE, VARCHAR, VARCHAR) -> VARCHAR"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "holidays",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "holidays(BIGINT, VARCHAR, VARCHAR) -> None"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "is_business_day",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "is_business_day(DATE) -> BOOLEAN",
+            "is_business_day(DATE, VARCHAR) -> BOOLEAN",
+            "is_business_day(DATE, VARCHAR, VARCHAR) -> BOOLEAN"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "is_holiday",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "is_holiday(DATE) -> BOOLEAN",
+            "is_holiday(DATE, VARCHAR) -> BOOLEAN",
+            "is_holiday(DATE, VARCHAR, VARCHAR) -> BOOLEAN"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "iso_week",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "iso_week(DATE) -> INTEGER"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "iso_year_week",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "iso_year_week(DATE) -> VARCHAR"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "rrule",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "rrule(TIMESTAMP, VARCHAR, TIMESTAMP, INTEGER) -> None"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "supported_countries",
+          "kinds": [
+            "table"
+          ],
+          "signatures": [
+            "TABLE"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        }
+      ],
+      "issues": []
+    },
+    "current": {
+      "catalog_status": "verified",
+      "revision": "d2fd23768e4c555b320daef4dd97cdd87b2dff49",
+      "catalog_sha256": "626136855bb05e1b52fcb3f68f5c93abfd555575c3c8be74dd2e955614aab1db",
+      "collection_reconciled": false,
+      "denominator": 12,
+      "observed_objects": 12,
+      "required": 6,
+      "verified_count": 8,
+      "candidate_count": 0,
+      "fraction": 0.6666666666666666,
+      "meets_target": true,
+      "exact_runtime_count": 0,
+      "runtime_revisions": [
+        "v0.5.0"
+      ],
+      "covered": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "add_business_days"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "business_days"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "business_days_between"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "holiday_name"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "is_business_day"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "is_holiday"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "rrule"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "supported_countries"
+        }
+      ],
+      "uncovered": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "easter"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "holidays"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "iso_week"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "iso_year_week"
+        }
+      ],
+      "objects": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "add_business_days",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "add_business_days(DATE, INTEGER) -> DATE",
+            "add_business_days(DATE, INTEGER, VARCHAR) -> DATE",
+            "add_business_days(DATE, INTEGER, VARCHAR, VARCHAR) -> DATE"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "business_days",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "business_days(DATE, DATE, VARCHAR, VARCHAR) -> None"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "business_days_between",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "business_days_between(DATE, DATE) -> INTEGER",
+            "business_days_between(DATE, DATE, VARCHAR) -> INTEGER",
+            "business_days_between(DATE, DATE, VARCHAR, VARCHAR) -> INTEGER"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "easter",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "easter(BIGINT) -> DATE"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "holiday_name",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "holiday_name(DATE) -> VARCHAR",
+            "holiday_name(DATE, VARCHAR) -> VARCHAR",
+            "holiday_name(DATE, VARCHAR, VARCHAR) -> VARCHAR"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "holidays",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "holidays(BIGINT, VARCHAR, VARCHAR) -> None"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "is_business_day",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "is_business_day(DATE) -> BOOLEAN",
+            "is_business_day(DATE, VARCHAR) -> BOOLEAN",
+            "is_business_day(DATE, VARCHAR, VARCHAR) -> BOOLEAN"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "is_holiday",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "is_holiday(DATE) -> BOOLEAN",
+            "is_holiday(DATE, VARCHAR) -> BOOLEAN",
+            "is_holiday(DATE, VARCHAR, VARCHAR) -> BOOLEAN"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "iso_week",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "iso_week(DATE) -> INTEGER"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "iso_year_week",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "iso_year_week(DATE) -> VARCHAR"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "rrule",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "rrule(TIMESTAMP, VARCHAR, TIMESTAMP, INTEGER) -> None"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "supported_countries",
+          "kinds": [
+            "table"
+          ],
+          "signatures": [
+            "TABLE"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        }
+      ],
+      "issues": []
+    }
+  },
+  "interface_drift": {
+    "known": true,
+    "current_only": [],
+    "released_only": [],
+    "changed": []
+  },
+  "notebooks": {
+    "01_same_lead_time_different_dates.ipynb": {
+      "verified": true,
+      "issues": []
+    }
+  },
+  "examples": [
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "supported_countries"
+      },
+      "notebook": "01_same_lead_time_different_dates.ipynb",
+      "runtime_revision": "v0.5.0",
+      "runtime_catalog_sha256": "e695fa1c6a9c52590c777cf20ae3f9940e6768baa43855dccff934c951f83709"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "rrule"
+      },
+      "notebook": "01_same_lead_time_different_dates.ipynb",
+      "runtime_revision": "v0.5.0",
+      "runtime_catalog_sha256": "e695fa1c6a9c52590c777cf20ae3f9940e6768baa43855dccff934c951f83709"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "is_business_day"
+      },
+      "notebook": "01_same_lead_time_different_dates.ipynb",
+      "runtime_revision": "v0.5.0",
+      "runtime_catalog_sha256": "e695fa1c6a9c52590c777cf20ae3f9940e6768baa43855dccff934c951f83709"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "is_holiday"
+      },
+      "notebook": "01_same_lead_time_different_dates.ipynb",
+      "runtime_revision": "v0.5.0",
+      "runtime_catalog_sha256": "e695fa1c6a9c52590c777cf20ae3f9940e6768baa43855dccff934c951f83709"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "holiday_name"
+      },
+      "notebook": "01_same_lead_time_different_dates.ipynb",
+      "runtime_revision": "v0.5.0",
+      "runtime_catalog_sha256": "e695fa1c6a9c52590c777cf20ae3f9940e6768baa43855dccff934c951f83709"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "add_business_days"
+      },
+      "notebook": "01_same_lead_time_different_dates.ipynb",
+      "runtime_revision": "v0.5.0",
+      "runtime_catalog_sha256": "e695fa1c6a9c52590c777cf20ae3f9940e6768baa43855dccff934c951f83709"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "business_days"
+      },
+      "notebook": "01_same_lead_time_different_dates.ipynb",
+      "runtime_revision": "v0.5.0",
+      "runtime_catalog_sha256": "e695fa1c6a9c52590c777cf20ae3f9940e6768baa43855dccff934c951f83709"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "business_days_between"
+      },
+      "notebook": "01_same_lead_time_different_dates.ipynb",
+      "runtime_revision": "v0.5.0",
+      "runtime_catalog_sha256": "e695fa1c6a9c52590c777cf20ae3f9940e6768baa43855dccff934c951f83709"
+    }
+  ],
+  "issues": []
+}

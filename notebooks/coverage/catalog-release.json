@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "repository": "Query-farm/vgi-calendar",
+  "revision": "v0.5.0",
+  "captured_at": "2026-11-14T20:45:41.952567+00:00",
+  "default_schema": "main",
+  "scope": "all_public_functions_and_tables",
+  "complete": true,
+  "objects": [
+    {
+      "schema": "main",
+      "name": "add_business_days",
+      "kind": "function",
+      "signatures": [
+        "add_business_days(DATE, INTEGER) -> DATE"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "add_business_days",
+      "kind": "function",
+      "signatures": [
+        "add_business_days(DATE, INTEGER, VARCHAR) -> DATE"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "add_business_days",
+      "kind": "function",
+      "signatures": [
+        "add_business_days(DATE, INTEGER, VARCHAR, VARCHAR) -> DATE"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "business_days",
+      "kind": "function",
+      "signatures": [
+        "business_days(DATE, DATE, VARCHAR, VARCHAR) -> None"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "business_days_between",
+      "kind": "function",
+      "signatures": [
+        "business_days_between(DATE, DATE) -> INTEGER"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "business_days_between",
+      "kind": "function",
+      "signatures": [
+        "business_days_between(DATE, DATE, VARCHAR) -> INTEGER"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "business_days_between",
+      "kind": "function",
+      "signatures": [
+        "business_days_between(DATE, DATE, VARCHAR, VARCHAR) -> INTEGER"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "easter",
+      "kind": "function",
+      "signatures": [
+        "easter(BIGINT) -> DATE"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "holiday_name",
+      "kind": "function",
+      "signatures": [
+        "holiday_name(DATE) -> VARCHAR"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "holiday_name",
+      "kind": "function",
+      "signatures": [
+        "holiday_name(DATE, VARCHAR) -> VARCHAR"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "holiday_name",
+      "kind": "function",
+      "signatures": [
+        "holiday_name(DATE, VARCHAR, VARCHAR) -> VARCHAR"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "holidays",
+      "kind": "function",
+      "signatures": [
+        "holidays(BIGINT, VARCHAR, VARCHAR) -> None"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "is_business_day",
+      "kind": "function",
+      "signatures": [
+        "is_business_day(DATE) -> BOOLEAN"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "is_business_day",
+      "kind": "function",
+      "signatures": [
+        "is_business_day(DATE, VARCHAR) -> BOOLEAN"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "is_business_day",
+      "kind": "function",
+      "signatures": [
+        "is_business_day(DATE, VARCHAR, VARCHAR) -> BOOLEAN"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "is_holiday",
+      "kind": "function",
+      "signatures": [
+        "is_holiday(DATE) -> BOOLEAN"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "is_holiday",
+      "kind": "function",
+      "signatures": [
+        "is_holiday(DATE, VARCHAR) -> BOOLEAN"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "is_holiday",
+      "kind": "function",
+      "signatures": [
+        "is_holiday(DATE, VARCHAR, VARCHAR) -> BOOLEAN"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "iso_week",
+      "kind": "function",
+      "signatures": [
+        "iso_week(DATE) -> INTEGER"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "iso_year_week",
+      "kind": "function",
+      "signatures": [
+        "iso_year_week(DATE) -> VARCHAR"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "rrule",
+      "kind": "function",
+      "signatures": [
+        "rrule(TIMESTAMP, VARCHAR, TIMESTAMP, INTEGER) -> None"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "supported_countries",
+      "kind": "table",
+      "signatures": [
+        "TABLE"
+      ],
+      "authentication": "none",
+      "access": "read"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "coverage/functions.json",
+      "sha256": "53d845c9ab4c09de32769d41c20682e188046542227b26137cc9937d28db4202",
+      "description": "Complete real released runtime functions export"
+    },
+    {
+      "path": "coverage/tables.json",
+      "sha256": "1438fc9a8f30b3167d71317feda9afddcebf87a47c11b03c9f965c5628e23387",
+      "description": "Complete real released runtime tables export"
+    },
+    {
+      "path": "coverage/views.json",
+      "sha256": "10ceb79f06e0d02dc2575a51e700b01c4613a752f3c991659062f2a900b67a6d",
+      "description": "Complete real released runtime views export"
+    }
+  ]
+}
