@@ -38,3 +38,10 @@ tasks:
   - name: count-supported-countries
     reference_sql: "SELECT count(DISTINCT country) AS n FROM cal.main.supported_countries"
     ignore_column_names: true
+  # Composed tasks: the natural solution combines several cal functions.
+  - name: payroll-last-business-day-2026
+    reference_sql: "WITH ends AS (SELECT r.seq, CAST(r.occurrence AS DATE) AS month_end FROM cal.main.rrule(TIMESTAMP '2026-01-31', 'FREQ=MONTHLY;BYMONTHDAY=-1;COUNT=12') AS r) SELECT CASE WHEN cal.main.is_business_day(month_end) THEN month_end ELSE cal.main.add_business_days(month_end, -1) END AS payday FROM ends ORDER BY seq"
+    ignore_column_names: true
+  - name: us-gb-shared-holidays-2026
+    reference_sql: "SELECT us.date FROM cal.main.holidays(2026, country := 'US') AS us JOIN cal.main.holidays(2026, country := 'GB') AS gb ON us.date = gb.date ORDER BY us.date"
+    ignore_column_names: true

@@ -138,6 +138,28 @@ SELECT * FROM cal.business_days(DATE '2026-12-21', DATE '2026-12-31', country :=
 SELECT id, add_business_days(invoiced_on, 2, 'US') AS due FROM invoices;
 ```
 
+The functions compose. A settlement calendar is a recurrence rolled onto
+business days — expand the schedule with `rrule`, then move any weekend/holiday
+date forward with `add_business_days` and record why with `holiday_name`:
+
+```sql
+-- 1st-of-month payments for 2026, rolled to the next US business day ("following")
+WITH sched AS (
+  SELECT r.seq, CAST(r.occurrence AS DATE) AS due
+  FROM cal.rrule(TIMESTAMP '2026-01-01', 'FREQ=MONTHLY;BYMONTHDAY=1;COUNT=12') AS r)
+SELECT due,
+       CASE WHEN cal.is_business_day(due) THEN due
+            ELSE cal.add_business_days(due, 1) END AS settles_on,
+       cal.holiday_name(due)                       AS holiday
+FROM sched ORDER BY seq;
+
+-- days both the US and UK offices are closed in 2026
+SELECT us.date, us.name AS us_holiday, gb.name AS gb_holiday
+FROM cal.holidays(2026, country := 'US') AS us
+JOIN cal.holidays(2026, country := 'GB') AS gb USING (date)
+ORDER BY us.date;
+```
+
 `business_days_between(start, end)` counts the half-open range `[start, end)`
 (`start` inclusive, `end` exclusive); a reversed range yields a negative count.
 

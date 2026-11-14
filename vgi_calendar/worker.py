@@ -218,6 +218,59 @@ _SCHEMA_EXAMPLE_QUERIES = json.dumps(
             "description": "How many distinct countries the holiday functions support.",
             "sql": "SELECT count(DISTINCT country) AS countries FROM cal.main.supported_countries",
         },
+        # Composed examples — combine several of this worker's functions, the way
+        # real settlement / capacity / cross-border / moveable-feast questions are asked.
+        {
+            "description": (
+                "Payment calendar: expand monthly 1st-of-month dates with rrule, roll non-business "
+                "days forward to the next US business day, and name the holiday that forced the roll."
+            ),
+            "sql": (
+                "WITH sched AS (SELECT r.seq, CAST(r.occurrence AS DATE) AS due "
+                "FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=MONTHLY;BYMONTHDAY=1;COUNT=12') AS r) "
+                "SELECT due, CASE WHEN cal.main.is_business_day(due) THEN due "
+                "ELSE cal.main.add_business_days(due, 1) END AS settles_on, "
+                "cal.main.holiday_name(due) AS holiday FROM sched ORDER BY seq"
+            ),
+        },
+        {
+            "description": (
+                "Capacity plan: US working days per month in 2026 next to the holidays that took "
+                "days away — a staffing/SLA forecast in one query."
+            ),
+            "sql": (
+                "WITH bd AS (SELECT date_trunc('month', date) AS month, count(*) AS business_days "
+                "FROM cal.main.business_days(DATE '2026-01-01', DATE '2026-12-31', country := 'US') "
+                "GROUP BY ALL), "
+                "hol AS (SELECT date_trunc('month', date) AS month, "
+                "string_agg(name, ', ' ORDER BY date) AS holidays "
+                "FROM cal.main.holidays(2026, country := 'US') GROUP BY ALL) "
+                "SELECT strftime(bd.month, '%Y-%m') AS month, bd.business_days, hol.holidays "
+                "FROM bd LEFT JOIN hol USING (month) ORDER BY bd.month"
+            ),
+        },
+        {
+            "description": (
+                "Cross-border closures: join the US and GB 2026 holiday lists to find the days both offices are shut."
+            ),
+            "sql": (
+                "SELECT us.date, us.name AS us_holiday, gb.name AS gb_holiday "
+                "FROM cal.main.holidays(2026, country := 'US') AS us "
+                "JOIN cal.main.holidays(2026, country := 'GB') AS gb ON us.date = gb.date "
+                "ORDER BY us.date"
+            ),
+        },
+        {
+            "description": (
+                "Moveable feasts: offset each German 2026 holiday from easter(2026) to see which are "
+                "Easter-anchored (Good Friday -2, Ascension +39, ...)."
+            ),
+            "sql": (
+                "SELECT h.date, h.name, h.date - cal.main.easter(2026) AS days_from_easter "
+                "FROM cal.main.holidays(2026, country := 'DE') AS h "
+                "WHERE abs(h.date - cal.main.easter(2026)) <= 60 ORDER BY h.date"
+            ),
+        },
     ]
 )
 
@@ -330,6 +383,21 @@ _EXECUTABLE_EXAMPLES = json.dumps(
                 "SELECT seq, occurrence FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4') ORDER BY seq"
             ),
         },
+        {
+            "name": "settlement-schedule-following",
+            "description": (
+                "Monthly 1st-of-month payments for 2026 expanded with rrule and rolled forward to "
+                "the next US business day when the 1st is a weekend or holiday (combines rrule, "
+                "is_business_day, add_business_days, and holiday_name)."
+            ),
+            "sql": (
+                "WITH sched AS (SELECT r.seq, CAST(r.occurrence AS DATE) AS due "
+                "FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=MONTHLY;BYMONTHDAY=1;COUNT=12') AS r) "
+                "SELECT due, CASE WHEN cal.main.is_business_day(due) THEN due "
+                "ELSE cal.main.add_business_days(due, 1) END AS settles_on, "
+                "cal.main.holiday_name(due) AS holiday FROM sched ORDER BY seq"
+            ),
+        },
     ]
 )
 
@@ -429,6 +497,23 @@ _AGENT_TEST_TASKS = json.dumps(
             "prompt": (
                 "Using the cal worker's supported_countries table, how many distinct countries does "
                 "it cover? Return a single count."
+            ),
+        },
+        {
+            "name": "payroll-last-business-day-2026",
+            "prompt": (
+                "Using the cal worker, payroll is paid on the last calendar day of each month of "
+                "2026; when that day is not a US business day (weekend or US public holiday) payday "
+                "moves back to the closest earlier US business day. List the 12 paydays for 2026 "
+                "as dates in chronological order."
+            ),
+        },
+        {
+            "name": "us-gb-shared-holidays-2026",
+            "prompt": (
+                "Using the cal worker, on which dates in 2026 are both the United States (country "
+                "'US') and the United Kingdom (country 'GB') observing a public holiday? Return the "
+                "dates in chronological order."
             ),
         },
     ]
