@@ -26,6 +26,7 @@ import json
 from vgi import Worker
 from vgi.catalog import Catalog, Schema, Table, constraint_record
 
+from vgi_calendar.composed import COMPOSED_EXAMPLES, PAYMENT_CALENDAR
 from vgi_calendar.meta import keywords_array
 from vgi_calendar.scalars import SCALAR_FUNCTIONS
 from vgi_calendar.tables import TABLE_FUNCTIONS, SupportedCountriesFunction
@@ -88,6 +89,21 @@ for _fn in _FUNCTIONS:
             continue
         _seen.add(_key)
         _bucket.append({"description": _ex.description, "sql": _ex.sql})
+
+# Composed examples also go on the per-object list of every object they name in
+# `attach_to`. The vgi-lint agent simulator shows agents only the first five
+# examples of a function or table (never the schema-level list), so each composed
+# example must land inside that window.
+_AGENT_VISIBLE_EXAMPLES = 5
+for _composed in COMPOSED_EXAMPLES:
+    for _name in _composed.attach_to:
+        _bucket = _EXAMPLES_BY_NAME[_name]
+        _key = " ".join(_composed.sql.split()).lower()
+        if _key not in _SEEN_SQL_BY_NAME[_name]:
+            _SEEN_SQL_BY_NAME[_name].add(_key)
+            _bucket.append(_composed.as_example())
+        if _bucket.index(_composed.as_example()) >= _AGENT_VISIBLE_EXAMPLES:
+            raise RuntimeError(f"composed example {_composed.name!r} is past the first five examples of {_name!r}")
 
 for _fn in _FUNCTIONS:
     _meta = _fn.Meta  # type: ignore[attr-defined]
@@ -218,59 +234,8 @@ _SCHEMA_EXAMPLE_QUERIES = json.dumps(
             "description": "How many distinct countries the holiday functions support.",
             "sql": "SELECT count(DISTINCT country) AS countries FROM cal.main.supported_countries",
         },
-        # Composed examples — combine several of this worker's functions, the way
-        # real settlement / capacity / cross-border / moveable-feast questions are asked.
-        {
-            "description": (
-                "Payment calendar: expand monthly 1st-of-month dates with rrule, roll non-business "
-                "days forward to the next US business day, and name the holiday that forced the roll."
-            ),
-            "sql": (
-                "WITH sched AS (SELECT r.seq, CAST(r.occurrence AS DATE) AS due "
-                "FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=MONTHLY;BYMONTHDAY=1;COUNT=12') AS r) "
-                "SELECT due, CASE WHEN cal.main.is_business_day(due) THEN due "
-                "ELSE cal.main.add_business_days(due, 1) END AS settles_on, "
-                "cal.main.holiday_name(due) AS holiday FROM sched ORDER BY seq"
-            ),
-        },
-        {
-            "description": (
-                "Capacity plan: US working days per month in 2026 next to the holidays that took "
-                "days away — a staffing/SLA forecast in one query."
-            ),
-            "sql": (
-                "WITH bd AS (SELECT date_trunc('month', date) AS month, count(*) AS business_days "
-                "FROM cal.main.business_days(DATE '2026-01-01', DATE '2026-12-31', country := 'US') "
-                "GROUP BY ALL), "
-                "hol AS (SELECT date_trunc('month', date) AS month, "
-                "string_agg(name, ', ' ORDER BY date) AS holidays "
-                "FROM cal.main.holidays(2026, country := 'US') GROUP BY ALL) "
-                "SELECT strftime(bd.month, '%Y-%m') AS month, bd.business_days, hol.holidays "
-                "FROM bd LEFT JOIN hol USING (month) ORDER BY bd.month"
-            ),
-        },
-        {
-            "description": (
-                "Cross-border closures: join the US and GB 2026 holiday lists to find the days both offices are shut."
-            ),
-            "sql": (
-                "SELECT us.date, us.name AS us_holiday, gb.name AS gb_holiday "
-                "FROM cal.main.holidays(2026, country := 'US') AS us "
-                "JOIN cal.main.holidays(2026, country := 'GB') AS gb ON us.date = gb.date "
-                "ORDER BY us.date"
-            ),
-        },
-        {
-            "description": (
-                "Moveable feasts: offset each German 2026 holiday from easter(2026) to see which are "
-                "Easter-anchored (Good Friday -2, Ascension +39, ...)."
-            ),
-            "sql": (
-                "SELECT h.date, h.name, h.date - cal.main.easter(2026) AS days_from_easter "
-                "FROM cal.main.holidays(2026, country := 'DE') AS h "
-                "WHERE abs(h.date - cal.main.easter(2026)) <= 60 ORDER BY h.date"
-            ),
-        },
+        # Composed examples (several cal objects in one query) follow; see composed.py.
+        *(ex.as_example() for ex in COMPOSED_EXAMPLES),
     ]
 )
 
@@ -383,21 +348,7 @@ _EXECUTABLE_EXAMPLES = json.dumps(
                 "SELECT seq, occurrence FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4') ORDER BY seq"
             ),
         },
-        {
-            "name": "settlement-schedule-following",
-            "description": (
-                "Monthly 1st-of-month payments for 2026 expanded with rrule and rolled forward to "
-                "the next US business day when the 1st is a weekend or holiday (combines rrule, "
-                "is_business_day, add_business_days, and holiday_name)."
-            ),
-            "sql": (
-                "WITH sched AS (SELECT r.seq, CAST(r.occurrence AS DATE) AS due "
-                "FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=MONTHLY;BYMONTHDAY=1;COUNT=12') AS r) "
-                "SELECT due, CASE WHEN cal.main.is_business_day(due) THEN due "
-                "ELSE cal.main.add_business_days(due, 1) END AS settles_on, "
-                "cal.main.holiday_name(due) AS holiday FROM sched ORDER BY seq"
-            ),
-        },
+        {"name": PAYMENT_CALENDAR.name, **PAYMENT_CALENDAR.as_example()},
     ]
 )
 
@@ -421,7 +372,7 @@ _AGENT_TEST_TASKS = json.dumps(
             "name": "iso-year-week-label",
             "prompt": (
                 "Using the cal worker, what is the ISO 8601 year-week label (ISO year and week "
-                "number) for 22 June 2026? Return the single label value."
+                "number) for 1 January 2027? Return the single label string the worker produces."
             ),
         },
         {
@@ -436,8 +387,8 @@ _AGENT_TEST_TASKS = json.dumps(
             "prompt": (
                 "Using the cal worker's RFC-5545 recurrence support, list the first six occurrences "
                 "of the rule 'FREQ=WEEKLY;BYDAY=MO,WE,FR;COUNT=6' starting at midnight on "
-                "1 January 2026. Return the sequence index and occurrence timestamp, ordered by "
-                "sequence."
+                "1 January 2026. Return two columns: rrule's own 0-based seq column and the "
+                "occurrence TIMESTAMP, ordered by seq."
             ),
         },
         {
@@ -448,10 +399,11 @@ _AGENT_TEST_TASKS = json.dumps(
             ),
         },
         {
-            "name": "is-christmas-a-business-day",
+            "name": "is-july-3-a-business-day",
             "prompt": (
-                "Using the cal worker, is 25 December 2026 a US business day — that is, a weekday "
-                "that is not a public holiday? Return a single boolean value."
+                "Using the cal worker, is Friday 3 July 2026 a US business day -- that is, a "
+                "weekday that is not a US public holiday (observed holidays count)? Return a "
+                "single boolean value."
             ),
         },
         {
@@ -463,17 +415,17 @@ _AGENT_TEST_TASKS = json.dumps(
             ),
         },
         {
-            "name": "easter-sunday-2026",
+            "name": "easter-sunday-2027",
             "prompt": (
                 "Using the cal worker, on what calendar date does Western (Gregorian) Easter Sunday "
-                "fall in 2026? Return a single date."
+                "fall in 2027? Return a single date."
             ),
         },
         {
             "name": "iso-week-number",
             "prompt": (
                 "Using the cal worker, what is the ISO-8601 week number (a value from 1 to 53) that "
-                "contains 22 June 2026? Return a single integer."
+                "contains 3 January 2027? Return a single integer."
             ),
         },
         {
@@ -488,15 +440,16 @@ _AGENT_TEST_TASKS = json.dumps(
             "name": "count-business-days-table",
             "prompt": (
                 "Using the cal worker's business_days table function, how many US business days does "
-                "it enumerate for the inclusive date range 21 December 2026 through 31 December "
+                "it enumerate for the inclusive date range 23 November 2026 through 30 November "
                 "2026? Return a single count."
             ),
         },
         {
-            "name": "count-supported-countries",
+            "name": "count-canada-subdivisions",
             "prompt": (
-                "Using the cal worker's supported_countries table, how many distinct countries does "
-                "it cover? Return a single count."
+                "Using the cal worker's supported_countries table, how many subdivisions "
+                "(provinces and territories) does it list for Canada (country code 'CA')? Return "
+                "a single count."
             ),
         },
         {
@@ -509,11 +462,12 @@ _AGENT_TEST_TASKS = json.dumps(
             ),
         },
         {
-            "name": "us-gb-shared-holidays-2026",
+            "name": "us-holidays-on-uk-business-days-2026",
             "prompt": (
-                "Using the cal worker, on which dates in 2026 are both the United States (country "
-                "'US') and the United Kingdom (country 'GB') observing a public holiday? Return the "
-                "dates in chronological order."
+                "Using the cal worker, which 2026 United States public holidays (country 'US', "
+                "including observed days) fall on a day that is a normal business day in the "
+                "United Kingdom (country 'GB'), i.e. a weekday that is not a GB public holiday? "
+                "Return two columns, the date and the US holiday name, ordered by date."
             ),
         },
     ]

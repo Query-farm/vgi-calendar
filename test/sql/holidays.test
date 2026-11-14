@@ -108,5 +108,38 @@ SELECT count(*) > 0 FROM cal.holidays(2027, country := 'US') WHERE observed;
 ----
 true
 
+
+# ---------------------------------------------------------------------------
+# Regressions
+# ---------------------------------------------------------------------------
+
+# supported_countries lists canonical ISO alpha-2 codes once; the library's
+# aliases (alpha-3 codes, 'UK') used to double the distinct count to 501.
+query II
+SELECT count(DISTINCT country), count(*) FILTER (WHERE length(country) <> 2) FROM cal.main.supported_countries;
+----
+250	0
+
+# Aliases are still accepted as arguments.
+query T
+SELECT cal.main.is_holiday(DATE '2026-12-25', 'USA');
+----
+true
+
+# Names are US English whatever the worker's locale (CI runs with LANG=C.UTF-8,
+# where the holidays library used to answer in German).
+query TT
+SELECT date, name FROM cal.main.holidays(2026, country := 'DE') WHERE date = DATE '2026-04-03';
+----
+2026-04-03	Good Friday
+
+# Observed shifts are detected without an "(observed)" label: Angola calls them
+# "Day off for ...".
+query TTT
+SELECT date, name, observed FROM cal.main.holidays(2026, country := 'AO') WHERE month(date) = 1 ORDER BY date;
+----
+2026-01-01	New Year's Day	false
+2026-01-02	Day off for New Year's Day	true
+
 statement ok
 DETACH cal;

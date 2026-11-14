@@ -34,7 +34,7 @@ class TestHolidaysTable:
     def test_us_2026(self) -> None:
         table = invoke_table_function(
             HolidaysFunction,
-            positional=(pa.scalar(2026, type=pa.int32()),),
+            positional=(pa.scalar(2026, type=pa.int64()),),
             named={"country": pa.scalar("US")},
         )
         assert table.num_rows > 0
@@ -48,12 +48,12 @@ class TestHolidaysTable:
     def test_subdiv_adds_holidays(self) -> None:
         us = invoke_table_function(
             HolidaysFunction,
-            positional=(pa.scalar(2026, type=pa.int32()),),
+            positional=(pa.scalar(2026, type=pa.int64()),),
             named={"country": pa.scalar("US")},
         ).num_rows
         ca = invoke_table_function(
             HolidaysFunction,
-            positional=(pa.scalar(2026, type=pa.int32()),),
+            positional=(pa.scalar(2026, type=pa.int64()),),
             named={"country": pa.scalar("US"), "subdiv": pa.scalar("CA")},
         ).num_rows
         assert ca >= us
@@ -63,7 +63,7 @@ class TestHolidaysTable:
         # on Friday 2027-12-24 and flags that row observed=True.
         table = invoke_table_function(
             HolidaysFunction,
-            positional=(pa.scalar(2027, type=pa.int32()),),
+            positional=(pa.scalar(2027, type=pa.int64()),),
             named={"country": pa.scalar("US")},
         )
         observed_flags = table.column("observed").to_pylist()
@@ -72,7 +72,7 @@ class TestHolidaysTable:
     def test_other_country(self) -> None:
         table = invoke_table_function(
             HolidaysFunction,
-            positional=(pa.scalar(2026, type=pa.int32()),),
+            positional=(pa.scalar(2026, type=pa.int64()),),
             named={"country": pa.scalar("GB")},
         )
         assert table.num_rows > 0

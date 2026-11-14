@@ -26,7 +26,7 @@ def client() -> Client:
 
 
 def test_easter_scalar(client: Client) -> None:
-    batch = pa.RecordBatch.from_pydict({"year": pa.array([2026, 2027], type=pa.int32())})
+    batch = pa.RecordBatch.from_pydict({"year": pa.array([2026, 2027], type=pa.int64())})
     results = list(
         client.scalar_function(
             function_name="easter",
@@ -57,7 +57,7 @@ def test_holidays_table_function(client: Client) -> None:
             function_name="holidays",
             schema_path=["main"],
             arguments=Arguments(
-                positional=(pa.scalar(2026, type=pa.int32()),),
+                positional=(pa.scalar(2026, type=pa.int64()),),
                 named={"country": pa.scalar("US")},
             ),
         )

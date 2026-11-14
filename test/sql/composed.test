@@ -1,5 +1,5 @@
 # name: test/sql/composed.test
-# description: Composed examples — several cal functions combined in one query (schema-level example queries + composed agent-task graders)
+# description: Composed examples (several cal objects in one query) and the composed agent-task graders. Each query is copied verbatim from vgi_calendar/composed.py or vgi-agent-tests.yaml; the rows are what its description promises.
 # group: [vgi_calendar]
 
 require-env VGI_CALENDAR_WORKER
@@ -10,58 +10,85 @@ LOAD vgi;
 statement ok
 ATTACH 'cal' AS cal (TYPE vgi, LOCATION '{VGI_CALENDAR_WORKER}');
 
-# rrule + is_business_day + add_business_days + holiday_name: 'following' settlement roll
+# settlement-schedule-following (composed.PAYMENT_CALENDAR): Payment calendar: 1st-of-month 2026 payments from rrule, rolled forward to the next US business day when the 1st is not one, with the reason: the holiday name, or the weekday for weekend rolls.
 query TTT
-WITH sched AS (SELECT r.seq, CAST(r.occurrence AS DATE) AS due FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=MONTHLY;BYMONTHDAY=1;COUNT=12') AS r) SELECT due, CASE WHEN cal.main.is_business_day(due) THEN due ELSE cal.main.add_business_days(due, 1) END AS settles_on, cal.main.holiday_name(due) AS holiday FROM sched ORDER BY seq;
+WITH sched AS (SELECT r.seq, CAST(r.occurrence AS DATE) AS due FROM cal.main.rrule(TIMESTAMP '2026-01-01', 'FREQ=MONTHLY;BYMONTHDAY=1;COUNT=12') AS r) SELECT due, CASE WHEN cal.main.is_business_day(due) THEN due ELSE cal.main.add_business_days(due, 1) END AS settles_on, CASE WHEN NOT cal.main.is_business_day(due) THEN coalesce(cal.main.holiday_name(due), dayname(due)) END AS rolled_because FROM sched ORDER BY seq;
 ----
 2026-01-01	2026-01-02	New Year's Day
-2026-02-01	2026-02-02	NULL
-2026-03-01	2026-03-02	NULL
+2026-02-01	2026-02-02	Sunday
+2026-03-01	2026-03-02	Sunday
 2026-04-01	2026-04-01	NULL
 2026-05-01	2026-05-01	NULL
 2026-06-01	2026-06-01	NULL
 2026-07-01	2026-07-01	NULL
-2026-08-01	2026-08-03	NULL
+2026-08-01	2026-08-03	Saturday
 2026-09-01	2026-09-01	NULL
 2026-10-01	2026-10-01	NULL
-2026-11-01	2026-11-02	NULL
+2026-11-01	2026-11-02	Sunday
 2026-12-01	2026-12-01	NULL
 
-# rrule (BYMONTHDAY=-1) + is_business_day + negative add_business_days: 'preceding' payroll
+# monthly-working-days (composed.MONTHLY_CAPACITY): Capacity plan: US business days per month in 2026, with the holidays that fell on a weekday and so removed a working day (weekend holidays such as Saturday 4 July are left out).
+query TIIT
+WITH bd AS (SELECT date_trunc('month', date) AS month, count(*) AS business_days FROM cal.main.business_days(DATE '2026-01-01', DATE '2026-12-31', country := 'US') GROUP BY ALL), lost AS (SELECT date_trunc('month', date) AS month, count(*) AS weekday_holidays, string_agg(name, ', ' ORDER BY date) AS holiday_names FROM cal.main.holidays(2026, country := 'US') WHERE isodow(date) <= 5 GROUP BY ALL) SELECT strftime(bd.month, '%Y-%m') AS month, bd.business_days, coalesce(lost.weekday_holidays, 0) AS weekday_holidays, lost.holiday_names FROM bd LEFT JOIN lost USING (month) ORDER BY bd.month;
+----
+2026-01	20	2	New Year's Day, Martin Luther King Jr. Day
+2026-02	19	1	Washington's Birthday
+2026-03	22	0	NULL
+2026-04	22	0	NULL
+2026-05	20	1	Memorial Day
+2026-06	21	1	Juneteenth National Independence Day
+2026-07	22	1	Independence Day (observed)
+2026-08	21	0	NULL
+2026-09	21	1	Labor Day
+2026-10	21	1	Columbus Day
+2026-11	19	2	Veterans Day, Thanksgiving Day
+2026-12	22	1	Christmas Day
+
+# us-gb-common-business-days (composed.US_GB_OPEN_DAYS): Cross-border settlement window: the days from 21 Dec 2026 to 8 Jan 2027 when both the US and the UK (GB) are open, i.e. US business days that are also GB business days.
 query TT
-WITH ends AS (SELECT r.seq, CAST(r.occurrence AS DATE) AS month_end FROM cal.main.rrule(TIMESTAMP '2026-01-31', 'FREQ=MONTHLY;BYMONTHDAY=-1;COUNT=12') AS r) SELECT month_end, CASE WHEN cal.main.is_business_day(month_end) THEN month_end ELSE cal.main.add_business_days(month_end, -1) END AS payday FROM ends ORDER BY seq;
+SELECT b.date, dayname(b.date) AS weekday FROM cal.main.business_days(DATE '2026-12-21', DATE '2027-01-08', country := 'US') AS b WHERE cal.main.is_business_day(b.date, 'GB') ORDER BY b.date;
 ----
-2026-01-31	2026-01-30
-2026-02-28	2026-02-27
-2026-03-31	2026-03-31
-2026-04-30	2026-04-30
-2026-05-31	2026-05-29
-2026-06-30	2026-06-30
-2026-07-31	2026-07-31
-2026-08-31	2026-08-31
-2026-09-30	2026-09-30
-2026-10-31	2026-10-30
-2026-11-30	2026-11-30
-2026-12-31	2026-12-31
+2026-12-21	Monday
+2026-12-22	Tuesday
+2026-12-23	Wednesday
+2026-12-24	Thursday
+2026-12-29	Tuesday
+2026-12-30	Wednesday
+2026-12-31	Thursday
+2027-01-04	Monday
+2027-01-05	Tuesday
+2027-01-06	Wednesday
+2027-01-07	Thursday
+2027-01-08	Friday
 
-# business_days aggregated per month joined to holidays aggregated per month
-query TIT
-WITH bd AS (SELECT date_trunc('month', date) AS month, count(*) AS business_days FROM cal.main.business_days(DATE '2026-01-01', DATE '2026-12-31', country := 'US') GROUP BY ALL), hol AS (SELECT date_trunc('month', date) AS month, string_agg(name, ', ' ORDER BY date) AS holidays FROM cal.main.holidays(2026, country := 'US') GROUP BY ALL) SELECT strftime(bd.month, '%Y-%m') AS month, bd.business_days, hol.holidays FROM bd LEFT JOIN hol USING (month) ORDER BY bd.month;
+# business-days-per-iso-week (composed.WEEKLY_CAPACITY): Sprint capacity: US business days in each ISO week from 30 Nov 2026 to 10 Jan 2027, labelled with iso_year_week (Christmas and New Year's Day cut W52 and W53 to 4 days).
+query TITT
+SELECT cal.main.iso_year_week(b.date) AS iso_week, count(*) AS business_days, min(b.date) AS first_day, max(b.date) AS last_day FROM cal.main.business_days(DATE '2026-11-30', DATE '2027-01-10', country := 'US') AS b GROUP BY ALL ORDER BY iso_week;
 ----
-2026-01	20	New Year's Day, Martin Luther King Jr. Day
-2026-02	19	Washington's Birthday
-2026-03	22	NULL
-2026-04	22	NULL
-2026-05	20	Memorial Day
-2026-06	21	Juneteenth National Independence Day
-2026-07	22	Independence Day (observed), Independence Day
-2026-08	21	NULL
-2026-09	21	Labor Day
-2026-10	21	Columbus Day
-2026-11	19	Veterans Day, Thanksgiving Day
-2026-12	22	Christmas Day
+2026-W49	5	2026-11-30	2026-12-04
+2026-W50	5	2026-12-07	2026-12-11
+2026-W51	5	2026-12-14	2026-12-18
+2026-W52	4	2026-12-21	2026-12-24
+2026-W53	4	2026-12-28	2026-12-31
+2027-W01	5	2027-01-04	2027-01-08
 
-# two holidays() calls joined on date: shared US/GB closures
+# business-days-to-next-holidays (composed.HOLIDAY_COUNTDOWN): Countdown: the US holidays on or after 13 November 2026, with how many US business days remain until each (business_days_between counts [start, end)).
+query TTI
+SELECT h.date, h.name, cal.main.business_days_between(DATE '2026-11-13', h.date) AS business_days_away FROM cal.main.holidays(2026, country := 'US') AS h WHERE h.date >= DATE '2026-11-13' ORDER BY h.date;
+----
+2026-11-26	Thanksgiving Day	9
+2026-12-25	Christmas Day	29
+
+# easter-anchored-holidays (composed.EASTER_ANCHORED): Moveable feasts: the German holidays whose offset from easter() is the same in 2025, 2026 and 2027, i.e. the Easter-anchored ones, with that offset in days. Fixed-date holidays such as Labor Day drop out.
+query TI
+WITH h AS (SELECT date, name FROM cal.main.holidays(2025, country := 'DE') UNION ALL SELECT date, name FROM cal.main.holidays(2026, country := 'DE') UNION ALL SELECT date, name FROM cal.main.holidays(2027, country := 'DE')) SELECT name, min(date - cal.main.easter(year(date))) AS days_from_easter FROM h GROUP BY name HAVING count(*) = 3 AND count(DISTINCT date - cal.main.easter(year(date))) = 1 ORDER BY days_from_easter;
+----
+Good Friday	-2
+Easter Monday	1
+Ascension Day	39
+Pentecost Monday	50
+
+# us-gb-shared-closures (composed.US_GB_SHARED_CLOSURES): Cross-border closures: the 2026 dates that are a public holiday in both the US and GB, with each country's holiday name.
 query TTT
 SELECT us.date, us.name AS us_holiday, gb.name AS gb_holiday FROM cal.main.holidays(2026, country := 'US') AS us JOIN cal.main.holidays(2026, country := 'GB') AS gb ON us.date = gb.date ORDER BY us.date;
 ----
@@ -69,12 +96,39 @@ SELECT us.date, us.name AS us_holiday, gb.name AS gb_holiday FROM cal.main.holid
 2026-05-25	Memorial Day	Spring Bank Holiday
 2026-12-25	Christmas Day	Christmas Day
 
-# holidays() + easter(): Easter-anchored German holidays
-query TTI
-SELECT h.date, h.name, h.date - cal.main.easter(2026) AS days_from_easter FROM cal.main.holidays(2026, country := 'DE') AS h WHERE abs(h.date - cal.main.easter(2026)) <= 60 ORDER BY h.date;
+# agent-task grader payroll-last-business-day-2026 (vgi-agent-tests.yaml)
+query T
+WITH ends AS (SELECT r.seq, CAST(r.occurrence AS DATE) AS month_end FROM cal.main.rrule(TIMESTAMP '2026-01-31', 'FREQ=MONTHLY;BYMONTHDAY=-1;COUNT=12') AS r) SELECT CASE WHEN cal.main.is_business_day(month_end) THEN month_end ELSE cal.main.add_business_days(month_end, -1) END AS payday FROM ends ORDER BY seq;
 ----
-2026-04-03	Good Friday	-2
-2026-04-06	Easter Monday	1
-2026-05-01	Labor Day	26
-2026-05-14	Ascension Day	39
-2026-05-25	Pentecost Monday	50
+2026-01-30
+2026-02-27
+2026-03-31
+2026-04-30
+2026-05-29
+2026-06-30
+2026-07-31
+2026-08-31
+2026-09-30
+2026-10-30
+2026-11-30
+2026-12-31
+
+# agent-task grader us-holidays-on-uk-business-days-2026 (vgi-agent-tests.yaml)
+query TT
+SELECT h.date, h.name FROM cal.main.holidays(2026, country := 'US') AS h WHERE cal.main.is_business_day(h.date, 'GB') ORDER BY h.date;
+----
+2026-01-19	Martin Luther King Jr. Day
+2026-02-16	Washington's Birthday
+2026-06-19	Juneteenth National Independence Day
+2026-07-03	Independence Day (observed)
+2026-09-07	Labor Day
+2026-10-12	Columbus Day
+2026-11-11	Veterans Day
+2026-11-26	Thanksgiving Day
+
+# The payroll grader accepts other correct solutions: the last business day per
+# month from business_days() gives the same 12 dates.
+query I
+SELECT count(*) FROM ((SELECT max(date) AS payday FROM cal.main.business_days(DATE '2026-01-01', DATE '2026-12-31') GROUP BY date_trunc('month', date)) EXCEPT (WITH ends AS (SELECT r.seq, CAST(r.occurrence AS DATE) AS month_end FROM cal.main.rrule(TIMESTAMP '2026-01-31', 'FREQ=MONTHLY;BYMONTHDAY=-1;COUNT=12') AS r) SELECT CASE WHEN cal.main.is_business_day(month_end) THEN month_end ELSE cal.main.add_business_days(month_end, -1) END FROM ends));
+----
+0

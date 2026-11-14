@@ -89,5 +89,26 @@ FROM (VALUES (2026), (2027)) AS t(y) ORDER BY y;
 2026	2026-04-05
 2027	2027-03-28
 
+
+# easter() takes BIGINT, so it composes with year(), which returns BIGINT.
+# (It used to take INTEGER and `easter(year(d))` failed to bind.)
+query TI
+SELECT d, d - cal.main.easter(year(d)) AS days_from_easter FROM (VALUES (DATE '2026-04-03'), (DATE '2027-05-06')) AS t(d) ORDER BY d;
+----
+2026-04-03	-2
+2027-05-06	39
+
+# count := 0 returns no rows (it used to return one).
+query I
+SELECT count(*) FROM cal.rrule(TIMESTAMP '2026-01-01', 'FREQ=DAILY', count := 0);
+----
+0
+
+# A negative count is rejected at bind time.
+statement error
+SELECT count(*) FROM cal.rrule(TIMESTAMP '2026-01-01', 'FREQ=DAILY', count := -1);
+----
+Argument 'count' is too small
+
 statement ok
 DETACH cal;

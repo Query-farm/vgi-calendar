@@ -23,14 +23,15 @@ ATTACH 'cal' (TYPE vgi, LOCATION 'uvx --from git+https://github.com/Query-farm/v
 SELECT cal.easter(2026);                                  -- DATE 2026-04-05
 SELECT cal.iso_year_week(DATE '2026-06-22');              -- '2026-W26'
 SELECT cal.is_holiday(DATE '2026-12-25');                 -- true (country defaults to 'US')
-SELECT cal.is_holiday(DATE '2026-07-14', 'FR');           -- true (Bastille Day)
+SELECT cal.is_holiday(DATE '2026-07-14', 'FR');           -- true (Bastille Day, named 'National Day')
 SELECT * FROM cal.holidays(2026, country := 'DE', subdiv := 'BY');  -- Bavaria
 SELECT * FROM cal.rrule(TIMESTAMP '2026-01-01', 'FREQ=WEEKLY;COUNT=4');
 ```
 
 > **Not US-centric.** The `'US'` you see in examples is only a *default*. The
 > holiday functions cover **every country `holidays` supports** — run
-> `SELECT count(DISTINCT country) FROM cal.supported_countries;` (hundreds).
+> `SELECT count(DISTINCT country) FROM cal.supported_countries;` (250 with
+> `holidays` 0.108, plus their states and provinces).
 
 > **Looking for stock-exchange trading calendars** (sessions, market open/close
 > hours, early closes)? Those live in the companion
@@ -83,10 +84,10 @@ The split follows what the VGI SDK allows for each function shape:
   arity overloads:
 
   ```sql
-  SELECT is_holiday(order_date)                  FROM orders;  -- defaults to 'US'
-  SELECT is_holiday(order_date, 'GB')            FROM orders;  -- explicit country
-  SELECT is_holiday(order_date, 'US', 'CA')      FROM orders;  -- country + subdivision
-  SELECT order_date, add_business_days(order_date, 2) AS due   FROM orders;
+  SELECT cal.is_holiday(order_date)              FROM orders;  -- defaults to 'US'
+  SELECT cal.is_holiday(order_date, 'GB')        FROM orders;  -- explicit country
+  SELECT cal.is_holiday(order_date, 'US', 'CA')  FROM orders;  -- country + subdivision
+  SELECT order_date, cal.add_business_days(order_date, 2) AS due FROM orders;
   ```
 
 * **Table functions** return *many* rows and therefore accept named `country :=`
@@ -106,19 +107,20 @@ The split follows what the VGI SDK allows for each function shape:
 | `is_holiday` | scalar | `(date DATE[, country[, subdiv]])` | `BOOLEAN` |
 | `holiday_name` | scalar | `(date DATE[, country[, subdiv]])` | `VARCHAR` (NULL if none) |
 | `is_business_day` | scalar | `(date DATE[, country[, subdiv]])` | `BOOLEAN` |
-| `add_business_days` | scalar | `(date DATE, n INT[, country])` | `DATE` |
-| `business_days_between` | scalar | `(start DATE, end DATE[, country])` | `INT` |
-| `easter` | scalar | `(year INT)` | `DATE` |
+| `add_business_days` | scalar | `(date DATE, n INT[, country[, subdiv]])` | `DATE` |
+| `business_days_between` | scalar | `(start DATE, end DATE[, country[, subdiv]])` | `INT` |
+| `easter` | scalar | `(year BIGINT)` | `DATE` |
 | `iso_week` | scalar | `(date DATE)` | `INT` |
 | `iso_year_week` | scalar | `(date DATE)` | `VARCHAR` (e.g. `'2026-W26'`) |
-| `holidays` | table | `(year INT, country := 'US', subdiv := NULL)` | `(date DATE, name VARCHAR, observed BOOLEAN)` |
+| `holidays` | table | `(year BIGINT, country := 'US', subdiv := NULL)` | `(date DATE, name VARCHAR, observed BOOLEAN)` |
 | `business_days` | table | `(start DATE, end DATE, country := 'US', subdiv := NULL)` | `(date DATE)` |
-| `rrule` | table | `(dtstart TIMESTAMP, rule VARCHAR, count := NULL, until := NULL)` | `(seq BIGINT, occurrence TIMESTAMP)` |
+| `rrule` | table | `(dtstart TIMESTAMP, rule VARCHAR, count := NULL (>= 0), until := NULL)` | `(seq BIGINT, occurrence TIMESTAMP)` |
 | `supported_countries` | table | `()` | `(country VARCHAR, subdivision VARCHAR)` |
 
-The `country` default is `'US'`; for `is_holiday` / `holiday_name` /
-`is_business_day` a `subdiv` overload selects a state/province calendar. Discover
-valid codes with `cal.supported_countries`.
+The `country` default is `'US'`; every holiday and business-day function has a
+`subdiv` overload (or `subdiv :=` argument) that selects a state/province
+calendar. Discover valid codes with `cal.supported_countries`. Holiday names are
+always returned in US English, whatever the worker's locale.
 
 ### Holidays & business days
 
@@ -135,12 +137,13 @@ SELECT * FROM cal.holidays(2026, country := 'US', subdiv := 'CA') ORDER BY date;
 SELECT * FROM cal.business_days(DATE '2026-12-21', DATE '2026-12-31', country := 'US');
 
 -- "2 business days after an invoice date" — a per-row scalar
-SELECT id, add_business_days(invoiced_on, 2, 'US') AS due FROM invoices;
+SELECT id, cal.add_business_days(invoiced_on, 2, 'US') AS due FROM invoices;
 ```
 
 The functions compose. A settlement calendar is a recurrence rolled onto
-business days — expand the schedule with `rrule`, then move any weekend/holiday
-date forward with `add_business_days` and record why with `holiday_name`:
+business days: expand the schedule with `rrule`, move any date that is not a
+business day forward with `add_business_days`, and record why with
+`holiday_name` (or the weekday, for a weekend roll):
 
 ```sql
 -- 1st-of-month payments for 2026, rolled to the next US business day ("following")
@@ -149,16 +152,27 @@ WITH sched AS (
   FROM cal.rrule(TIMESTAMP '2026-01-01', 'FREQ=MONTHLY;BYMONTHDAY=1;COUNT=12') AS r)
 SELECT due,
        CASE WHEN cal.is_business_day(due) THEN due
-            ELSE cal.add_business_days(due, 1) END AS settles_on,
-       cal.holiday_name(due)                       AS holiday
+            ELSE cal.add_business_days(due, 1) END              AS settles_on,
+       CASE WHEN NOT cal.is_business_day(due)
+            THEN coalesce(cal.holiday_name(due), dayname(due)) END AS rolled_because
 FROM sched ORDER BY seq;
 
--- days both the US and UK offices are closed in 2026
-SELECT us.date, us.name AS us_holiday, gb.name AS gb_holiday
-FROM cal.holidays(2026, country := 'US') AS us
-JOIN cal.holidays(2026, country := 'GB') AS gb USING (date)
-ORDER BY us.date;
+-- days around the 2026 year end when both the US and the UK are open
+SELECT b.date, dayname(b.date) AS weekday
+FROM cal.business_days(DATE '2026-12-21', DATE '2027-01-08', country := 'US') AS b
+WHERE cal.is_business_day(b.date, 'GB')
+ORDER BY b.date;
+
+-- US business days left until each remaining 2026 holiday
+SELECT h.date, h.name, cal.business_days_between(DATE '2026-11-13', h.date) AS business_days_away
+FROM cal.holidays(2026, country := 'US') AS h
+WHERE h.date >= DATE '2026-11-13'
+ORDER BY h.date;
 ```
+
+More composed queries (monthly and per-ISO-week capacity, Easter-anchored
+holidays) ship with the catalog in `vgi.example_queries`; see
+`vgi_calendar/composed.py`.
 
 `business_days_between(start, end)` counts the half-open range `[start, end)`
 (`start` inclusive, `end` exclusive); a reversed range yields a negative count.
@@ -213,8 +227,7 @@ uv sync --all-extras     # create .venv with vgi-python + holidays + dateutil + 
 make test                # pytest (unit + integration) + SQL end-to-end
 make test-unit           # pytest only
 make test-sql            # DuckDB sqllogictest files via haybarn-unittest
-uv run ruff check .      # lint
-uv run mypy vgi_calendar/
+make lint                # ruff format --check, ruff check, mypy
 ```
 
 `tests/test_core.py` covers the pure date math (including error / edge cases and
@@ -231,12 +244,14 @@ protocol vgi.v3 / 3.3) against a real `ATTACH` + `SELECT`.
 ## Layout
 
 ```
-calendar_worker.py       entry point; assembles the `cal` catalog (inline uv script metadata)
+calendar_worker.py       repo-root entry point (PEP 723 inline deps); runs vgi_calendar.worker
 Makefile                 test / test-unit / test-sql targets
 vgi_calendar/
   core.py                pure datetime math over holidays + dateutil (no Arrow/VGI)
   scalars.py             per-row holiday/business-day scalars (arity overloads)
   tables.py              named-arg tables: holidays, business_days, rrule, supported_countries
+  worker.py              assembles the `cal` catalog: metadata, examples, agent tasks
+  composed.py            composed example queries (several functions in one query)
   schema_utils.py        Arrow field/comment helpers
   meta.py                per-object discovery/description metadata helpers
 tests/
@@ -245,6 +260,7 @@ tests/
   test_tables.py         table-function integration tests
   test_scalars.py        per-row scalar overloads via vgi.client.Client
   test_client.py         end-to-end scalar + table tests via vgi.client.Client
+  test_composed.py       where composed examples are published; grader answers stay private
 test/sql/
   *.test                 DuckDB sqllogictest end-to-end cases (haybarn-unittest)
 ```

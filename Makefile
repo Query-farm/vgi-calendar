@@ -33,7 +33,11 @@ test-sql:
 		VGI_CALENDAR_WORKER="$(WORKER_STDIO)" \
 		haybarn-unittest --keep-home --test-dir "$(TEST_DIR)" "$(TEST_PATTERN)"
 
+# Mirrors CI's lint job. `uv sync --all-extras` first: mypy is a dev extra, and
+# without it `uv run mypy` falls through to a globally installed mypy that cannot
+# see the project's dependencies.
 lint:
 	uv run ruff format --check .
 	uv run ruff check .
-	uv run mypy vgi_calendar/
+	uv run mypy vgi_calendar/ calendar_worker.py
+	uvx pydoclint --config pyproject.toml vgi_calendar/ calendar_worker.py

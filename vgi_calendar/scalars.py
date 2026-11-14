@@ -89,12 +89,22 @@ class EasterFunction(ScalarFunction):
         )
         examples = [
             FunctionExample(sql="SELECT cal.main.easter(2026)", description="Easter Sunday in 2026"),
+            FunctionExample(
+                sql=(
+                    "SELECT d, d - cal.main.easter(year(d)) AS days_from_easter "
+                    "FROM (VALUES (DATE '2026-04-03'), (DATE '2027-05-06')) AS t(d) ORDER BY d"
+                ),
+                description="Days from that year's Easter Sunday (easter accepts year(d) directly)",
+            ),
         ]
 
     @classmethod
     def compute(
         cls,
-        year: Annotated[pa.Int32Array, Param(doc="Year (e.g. 2026)")],
+        # BIGINT, not INTEGER: DuckDB's year() returns BIGINT and will not narrow it
+        # implicitly, so an INTEGER parameter rejected `easter(year(d))`. An INTEGER
+        # literal such as 2026 still widens to BIGINT.
+        year: Annotated[pa.Int64Array, Param(doc="Year (e.g. 2026)")],
     ) -> Annotated[pa.Date32Array, Returns()]:
         """Map each year to its Easter Sunday date (NULLs pass through)."""
         out = [None if y is None else core.easter(int(y)) for y in year.to_pylist()]

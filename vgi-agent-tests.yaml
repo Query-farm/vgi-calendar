@@ -6,7 +6,7 @@ tasks:
     reference_sql: "SELECT cal.main.add_business_days(DATE '2026-11-25', 5) AS result"
     ignore_column_names: true
   - name: iso-year-week-label
-    reference_sql: "SELECT cal.main.iso_year_week(DATE '2026-06-22') AS iso_year_week"
+    reference_sql: "SELECT cal.main.iso_year_week(DATE '2027-01-01') AS label"
     ignore_column_names: true
   - name: japan-golden-week-holiday-name
     reference_sql: "SELECT cal.main.holiday_name(DATE '2026-05-04', 'JP') AS name"
@@ -17,31 +17,34 @@ tasks:
   - name: is-us-independence-day-a-holiday
     reference_sql: "SELECT cal.main.is_holiday(DATE '2026-07-04') AS is_holiday"
     ignore_column_names: true
-  - name: is-christmas-a-business-day
-    reference_sql: "SELECT cal.main.is_business_day(DATE '2026-12-25') AS is_business_day"
+  - name: is-july-3-a-business-day
+    reference_sql: "SELECT cal.main.is_business_day(DATE '2026-07-03') AS answer"
     ignore_column_names: true
   - name: count-business-days-year-end
     reference_sql: "SELECT cal.main.business_days_between(DATE '2026-12-21', DATE '2026-12-31') AS n"
     ignore_column_names: true
-  - name: easter-sunday-2026
-    reference_sql: "SELECT cal.main.easter(2026) AS easter_date"
+  - name: easter-sunday-2027
+    reference_sql: "SELECT cal.main.easter(2027) AS easter_date"
     ignore_column_names: true
   - name: iso-week-number
-    reference_sql: "SELECT cal.main.iso_week(DATE '2026-06-22') AS week"
+    reference_sql: "SELECT cal.main.iso_week(DATE '2027-01-03') AS week"
     ignore_column_names: true
   - name: count-us-holidays-2026
     reference_sql: "SELECT count(*) AS n FROM cal.main.holidays(2026, country := 'US')"
     ignore_column_names: true
   - name: count-business-days-table
-    reference_sql: "SELECT count(*) AS n FROM cal.main.business_days(DATE '2026-12-21', DATE '2026-12-31', country := 'US')"
+    reference_sql: "SELECT count(*) AS n FROM cal.main.business_days(DATE '2026-11-23', DATE '2026-11-30', country := 'US')"
     ignore_column_names: true
-  - name: count-supported-countries
-    reference_sql: "SELECT count(DISTINCT country) AS n FROM cal.main.supported_countries"
+  - name: count-canada-subdivisions
+    reference_sql: "SELECT count(*) AS n FROM cal.main.supported_countries WHERE country = 'CA'"
     ignore_column_names: true
-  # Composed tasks: the natural solution combines several cal functions.
+  # Composed tasks: the natural solution combines several cal functions. Their
+  # reference SQL must not be published verbatim in any vgi.example_queries list.
   - name: payroll-last-business-day-2026
     reference_sql: "WITH ends AS (SELECT r.seq, CAST(r.occurrence AS DATE) AS month_end FROM cal.main.rrule(TIMESTAMP '2026-01-31', 'FREQ=MONTHLY;BYMONTHDAY=-1;COUNT=12') AS r) SELECT CASE WHEN cal.main.is_business_day(month_end) THEN month_end ELSE cal.main.add_business_days(month_end, -1) END AS payday FROM ends ORDER BY seq"
     ignore_column_names: true
-  - name: us-gb-shared-holidays-2026
-    reference_sql: "SELECT us.date FROM cal.main.holidays(2026, country := 'US') AS us JOIN cal.main.holidays(2026, country := 'GB') AS gb ON us.date = gb.date ORDER BY us.date"
+  # Not published as an example: the published cross-border examples answer
+  # different questions (shared closures; common business days in a window).
+  - name: us-holidays-on-uk-business-days-2026
+    reference_sql: "SELECT h.date, h.name FROM cal.main.holidays(2026, country := 'US') AS h WHERE cal.main.is_business_day(h.date, 'GB') ORDER BY h.date"
     ignore_column_names: true

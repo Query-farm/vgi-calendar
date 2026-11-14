@@ -78,7 +78,7 @@ _SUBDIV = Arg[str | None](
 class _HolidaysArgs:
     """``holidays(year, country := ..., subdiv := ...)``."""
 
-    year: Annotated[int, Arg(0, arrow_type=pa.int32(), doc="Calendar year (e.g. 2026).")]
+    year: Annotated[int, Arg(0, arrow_type=pa.int64(), doc="Calendar year (e.g. 2026).")]
     country: Annotated[str, _COUNTRY]
     subdiv: Annotated[str | None, _SUBDIV]
 
@@ -264,7 +264,11 @@ class _RruleArgs:
 
     dtstart: Annotated[_dt.datetime, Arg(0, arrow_type=pa.timestamp("us"), doc="First instant of the recurrence.")]
     rule: Annotated[str, Arg(1, arrow_type=pa.string(), doc="RFC-5545 RRULE body or full string.")]
-    count: Annotated[int | None, Arg("count", default=None, arrow_type=pa.int32(), doc="Max occurrences.")]
+    # ge=0 rejects a negative count at bind time; count := 0 returns no rows.
+    count: Annotated[
+        int | None,
+        Arg("count", default=None, arrow_type=pa.int32(), ge=0, doc="Max occurrences (0 returns no rows)."),
+    ]
     until: Annotated[
         _dt.datetime | None,
         Arg("until", default=None, arrow_type=pa.timestamp("us"), doc="Upper bound (inclusive)."),

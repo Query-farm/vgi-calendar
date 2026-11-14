@@ -24,6 +24,19 @@ from dateutil.rrule import rrulestr
 
 _WEEKEND = {5, 6}  # Saturday, Sunday (Python weekday(): Mon=0 .. Sun=6)
 
+# Holiday names are always returned in US English. Without an explicit language
+# the `holidays` library picks one from the process locale (LANGUAGE / LC_ALL /
+# LC_MESSAGES / LANG) and otherwise falls back to each country's own language, so
+# the same query returned "Good Friday" on an en_US machine and "Karfreitag" on a
+# CI runner (LANG=C.UTF-8). Every supported country accepts "en_US"; the
+# English-only ones simply have no translation to apply.
+_LANGUAGE = "en_US"
+
+
+def _country_holidays(country: str, subdiv: str | None, **kwargs: object) -> holidays.HolidayBase:
+    """Build a locale-independent :mod:`holidays` calendar (names in US English)."""
+    return holidays.country_holidays(country.upper(), subdiv=subdiv or None, language=_LANGUAGE, **kwargs)  # type: ignore[arg-type]
+
 
 @functools.lru_cache(maxsize=256)
 def _holidays_for(country: str, subdiv: str | None) -> holidays.HolidayBase:
@@ -37,7 +50,7 @@ def _holidays_for(country: str, subdiv: str | None) -> holidays.HolidayBase:
     matching how the ``supported_countries`` discovery table represents a
     country-level entry (empty string, so it can be part of the primary key).
     """
-    return holidays.country_holidays(country.upper(), subdiv=subdiv or None)
+    return _country_holidays(country, subdiv)
 
 
 def is_holiday(date: _dt.date, country: str = "US", subdiv: str | None = None) -> bool:
@@ -126,16 +139,20 @@ def iso_year_week(date: _dt.date) -> str:
 def holidays_in_year(year: int, country: str = "US", subdiv: str | None = None) -> list[tuple[_dt.date, str, bool]]:
     """All holidays in ``year`` as ``(date, name, observed)`` triples, date-sorted.
 
-    ``observed`` is ``True`` when the entry is an *observed* shift (the library
-    appends ``"(observed)"`` to the name when a holiday falling on a weekend is
-    observed on an adjacent weekday).
+    ``observed`` is ``True`` when the entry is (or includes) an *observed* shift:
+    a holiday that falls on a weekend and is observed on an adjacent weekday. It
+    is found by comparing against the same calendar built with ``observed=False``,
+    not by looking for ``"(observed)"`` in the name, because the observed label
+    differs between countries (some use no label at all).
     """
-    cal = holidays.country_holidays(country.upper(), subdiv=subdiv or None, years=year, observed=True)
+    cal = _country_holidays(country, subdiv, years=year, observed=True)
+    plain = _country_holidays(country, subdiv, years=year, observed=False)
     rows: list[tuple[_dt.date, str, bool]] = []
     for d, name in cal.items():
         if d.year != year:
             continue
-        rows.append((d, name, "(observed)" in name.lower()))
+        shifted = set(name.split("; ")) - set((plain.get(d) or "").split("; "))
+        rows.append((d, name, bool(shifted)))
     rows.sort(key=lambda r: r[0])
     return rows
 
@@ -148,9 +165,13 @@ def supported_countries() -> list[tuple[str, str | None]]:
     yields one row per subdivision (so ``SELECT DISTINCT country`` still lists
     every supported country). This is how broad the coverage is -- the ``"US"``
     default of the holiday functions is just a default, not a limit.
+
+    Only canonical ISO-3166 alpha-2 codes are listed. The library's aliases (the
+    alpha-3 codes such as ``"USA"`` and ``"UK"`` for ``"GB"``) are still accepted
+    as arguments but would count every country twice here.
     """
     out: list[tuple[str, str | None]] = []
-    for country, subdivs in sorted(holidays.list_supported_countries().items()):
+    for country, subdivs in sorted(holidays.list_supported_countries(include_aliases=False).items()):
         if subdivs:
             out.extend((country, s) for s in subdivs)
         else:
@@ -159,7 +180,11 @@ def supported_countries() -> list[tuple[str, str | None]]:
 
 
 def supported_country_codes() -> list[str]:
-    """Sorted list of every ``country`` code the holiday functions accept."""
+    """Sorted list of every ``country`` code the holiday functions accept.
+
+    Includes the library's aliases (alpha-3 codes, ``"UK"``), which are valid
+    arguments; :func:`supported_countries` lists canonical alpha-2 codes only.
+    """
     return sorted(holidays.list_supported_countries().keys())
 
 
@@ -208,6 +233,10 @@ def expand_rrule(
     earliest stop wins. An unbounded rule (no count/until anywhere) is capped at
     ``hard_cap`` occurrences so it always terminates.
     """
+    if count is not None and count < 0:
+        raise ValueError(f"count must be >= 0, got {count}")
+    if count == 0:
+        return []
     rr = rrulestr(rule, dtstart=dtstart)
 
     bounded = count is not None or until is not None or _rule_is_bounded(rule)

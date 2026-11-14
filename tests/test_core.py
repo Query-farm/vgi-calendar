@@ -222,3 +222,64 @@ class TestHolidayCoverage:
         rows = core.supported_countries()
         de_subdivs = {s for c, s in rows if c == "DE" and s is not None}
         assert "BY" in de_subdivs  # Bavaria
+
+
+class TestRegressions:
+    """Bugs fixed in the composed-examples pass, one test each."""
+
+    @pytest.mark.parametrize("locale_var", ["LANGUAGE", "LC_ALL", "LANG"])
+    def test_holiday_names_ignore_process_locale(self, monkeypatch: pytest.MonkeyPatch, locale_var: str) -> None:
+        # The holidays library used to pick the name language from the process
+        # locale, so CI (LANG=C.UTF-8) saw "Karfreitag" where en_US saw "Good Friday".
+        for var in ("LANGUAGE", "LC_ALL", "LC_MESSAGES", "LANG"):
+            monkeypatch.delenv(var, raising=False)
+        monkeypatch.setenv(locale_var, "de_DE.UTF-8")
+        core._holidays_for.cache_clear()
+        try:
+            assert core.holiday_name(dt.date(2026, 4, 3), "DE") == "Good Friday"
+            assert ("2026-04-03", "Good Friday") in {(str(d), n) for d, n, _ in core.holidays_in_year(2026, "DE")}
+        finally:
+            core._holidays_for.cache_clear()
+
+    def test_holiday_names_default_to_english_without_locale(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        for var in ("LANGUAGE", "LC_ALL", "LC_MESSAGES", "LANG"):
+            monkeypatch.delenv(var, raising=False)
+        core._holidays_for.cache_clear()
+        try:
+            assert core.holiday_name(dt.date(2026, 5, 4), "JP") == "Greenery Day"
+        finally:
+            core._holidays_for.cache_clear()
+
+    def test_observed_flag_without_observed_label(self) -> None:
+        # Angola labels its shifts "Day off for ..." -- no "(observed)" in the name,
+        # so the old name-substring test reported observed = False.
+        rows = {d: (n, o) for d, n, o in core.holidays_in_year(2026, "AO")}
+        assert rows[dt.date(2026, 1, 2)] == ("Day off for New Year's Day", True)
+        assert rows[dt.date(2026, 1, 1)][1] is False
+
+    def test_observed_flag_us_still_detected(self) -> None:
+        observed = [d for d, _, o in core.holidays_in_year(2027, "US") if o]
+        assert dt.date(2027, 12, 31) in observed  # New Year's Day 2028 observed
+        assert dt.date(2027, 12, 25) not in observed
+
+    def test_supported_countries_lists_canonical_codes_only(self) -> None:
+        # The library's aliases (alpha-3 codes and "UK") used to double the
+        # distinct-country count (501 instead of 250).
+        countries = {c for c, _ in core.supported_countries()}
+        assert all(len(c) == 2 for c in countries)
+        assert "USA" not in countries and "UK" not in countries
+        assert "US" in countries and "GB" in countries
+        rows = core.supported_countries()
+        assert len(rows) == len(set(rows))
+
+    def test_aliases_still_accepted_as_arguments(self) -> None:
+        assert "USA" in core.supported_country_codes()
+        assert core.is_holiday(dt.date(2026, 12, 25), "USA") is True
+
+    def test_rrule_count_zero_returns_nothing(self) -> None:
+        # count=0 used to return one occurrence (the bound was checked after appending).
+        assert core.expand_rrule(dt.datetime(2026, 1, 1), "FREQ=DAILY", count=0) == []
+
+    def test_rrule_negative_count_raises(self) -> None:
+        with pytest.raises(ValueError, match="count must be >= 0"):
+            core.expand_rrule(dt.datetime(2026, 1, 1), "FREQ=DAILY", count=-3)
