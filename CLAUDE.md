@@ -132,6 +132,6 @@ metadata gate, and an `integration` job that runs the SQL suite through
 - `holidays` library: `country` is its country code; `subdiv` is a subdivision
   (state/province). Unknown country/subdiv raises — surfaced as a clear error.
 - `rrule` is RFC-5545 via `dateutil.rrule.rrulestr`; bound by `count` or `until`.
-- Released from tags (`v0.4.0` is current) as GitHub releases and a ghcr image;
+- Released from tags (`v0.5.0` is current) as GitHub releases and a ghcr image;
   never published to PyPI. All functions are pure/offline (no model downloads,
   no network), so the suite is fast and hermetic.
