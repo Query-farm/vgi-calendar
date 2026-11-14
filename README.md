@@ -272,3 +272,7 @@ test/sql/
 Written by [Query.Farm](https://query.farm).
 
 Copyright 2026 Query Farm LLC - https://query.farm
+
+## Notebooks
+
+See the [executed calendar notebook](notebooks/README.md) for regional delivery-date examples using Haybarn and VGI SQL.
