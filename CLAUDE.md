@@ -116,7 +116,7 @@ uvx --refresh --prerelease allow --from 'vgi-lint-check>=2.5.1' \
   vgi-lint lint --execute --execute-mode run --fail-on info   # metadata gate (reads vgi-lint.toml)
 ```
 
-`make test-sql` sets `VGI_CALENDAR_WORKER="uv run --python 3.13
+`make test-sql` sets `VGI_CALENDAR_WORKER="uv run --python 3.14
 calendar_worker.py"`, puts `~/.local/bin` on PATH, and runs `haybarn-unittest
 --keep-home --test-dir . "test/sql/*"`. Install the runner once with
 `uv tool install --prerelease allow 'haybarn-unittest>=2.0.0rc11,<2.1'` (haybarn 2.0:
