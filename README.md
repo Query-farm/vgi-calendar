@@ -18,7 +18,7 @@ Easter from [`python-dateutil`](https://pypi.org/project/python-dateutil/).
 
 ```sql
 INSTALL vgi FROM community; LOAD vgi;
-ATTACH 'cal' (TYPE vgi, LOCATION 'uvx --from git+https://github.com/Query-farm/vgi-calendar@v0.5.0 vgi-calendar-worker');
+ATTACH 'cal' (TYPE vgi, LOCATION 'uvx --from git+https://github.com/Query-farm/vgi-calendar@v0.5.1 vgi-calendar-worker');
 
 SELECT cal.easter(2026);                                  -- DATE 2026-04-05
 SELECT cal.iso_year_week(DATE '2026-06-22');              -- '2026-W26'
@@ -46,7 +46,7 @@ The worker isn't on PyPI; [uv](https://docs.astral.sh/uv/) runs it straight from
 INSTALL vgi FROM community;
 LOAD vgi;
 
-ATTACH 'cal' AS cal (TYPE vgi, LOCATION 'uvx --from git+https://github.com/Query-farm/vgi-calendar@v0.5.0 vgi-calendar-worker');
+ATTACH 'cal' AS cal (TYPE vgi, LOCATION 'uvx --from git+https://github.com/Query-farm/vgi-calendar@v0.5.1 vgi-calendar-worker');
 
 -- Whether 25 December 2026 is a US public holiday.
 SELECT cal.main.is_holiday(DATE '2026-12-25') AS is_holiday;
