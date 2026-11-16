@@ -1,6 +1,6 @@
 [project]
 name = "vgi-calendar"
-version = "0.5.1"
+version = "0.5.2"
 description = "Holiday, business-day, and recurrence calendar math for DuckDB via VGI"
 readme = "README.md"
 keywords = [
