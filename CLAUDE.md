@@ -116,16 +116,15 @@ uvx --refresh --prerelease allow --from 'vgi-lint-check>=2.5.1' \
   vgi-lint lint --execute --execute-mode run --fail-on info   # metadata gate (reads vgi-lint.toml)
 ```
 
-`make test-sql` sets `VGI_CALENDAR_WORKER="uv run --python 3.14
-calendar_worker.py"`, puts `~/.local/bin` on PATH, and runs `haybarn-unittest
---keep-home --test-dir . "test/sql/*"`. Install the runner once with
-`uv tool install --prerelease allow 'haybarn-unittest>=2.0.0rc11,<2.1'` (haybarn 2.0:
-only its community `vgi` extension speaks the worker's VGI protocol vgi.v3 /
-3.3). **The SQL suite is authoritative** — unit
+`make test-sql` installs the pinned `haybarn-unittest` into `.tools/` and runs
+`ci/run-integration.sh` (adapted from the vgi-starters template) over the stdio,
+launch and http transports (`make test-sql TRANSPORTS=launch` for one); it sets
+`VGI_CALENDAR_WORKER` per transport (haybarn 2.0: only its community `vgi`
+extension speaks the worker's VGI protocol vgi.v3 / 3.3). **The SQL suite is authoritative** — unit
 tests call functions directly and can pass while the RPC path is broken (that's
 how edge #1 hid). CI (`.github/workflows/ci.yml`) runs unit tests, lint, the vgi-lint
 metadata gate, and an `integration` job that runs the SQL suite through
-`ci/run-integration.sh` over the subprocess, http, and unix transports.
+`ci/run-integration.sh` over the stdio, launch, and http transports.
 
 ## Conventions
 
