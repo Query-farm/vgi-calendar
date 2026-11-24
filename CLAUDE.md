@@ -119,8 +119,8 @@ uvx --refresh --prerelease allow --from 'vgi-lint-check>=2.5.1' \
 `make test-sql` installs the pinned `haybarn-unittest` into `.tools/` and runs
 `ci/run-integration.sh` (adapted from the vgi-starters template) over the stdio,
 launch and http transports (`make test-sql TRANSPORTS=launch` for one); it sets
-`VGI_CALENDAR_WORKER` per transport (haybarn 2.0: only its community `vgi`
-extension speaks the worker's VGI protocol vgi.v3 / 3.3). **The SQL suite is authoritative** — unit
+`VGI_CALENDAR_WORKER` per transport (haybarn 2.0.1: only its community `vgi`
+extension speaks the worker's VGI protocol vgi.v3 / 3.4). **The SQL suite is authoritative** — unit
 tests call functions directly and can pass while the RPC path is broken (that's
 how edge #1 hid). CI (`.github/workflows/ci.yml`) runs unit tests, lint, the vgi-lint
 metadata gate, and an `integration` job that runs the SQL suite through
